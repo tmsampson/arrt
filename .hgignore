@@ -1,2 +1,3 @@
 ^target/
+^output.bmp
 glob:*.rs.bk
