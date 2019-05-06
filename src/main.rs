@@ -1,7 +1,7 @@
 // -----------------------------------------------------------------------------------------
 
-mod vectorlib;
-use vectorlib::Vec3;
+mod vector;
+use vector::Vec3;
 
 // -----------------------------------------------------------------------------------------
 
@@ -85,11 +85,11 @@ fn draw_scene(image: &mut bmp::Image, image_width: u32, image_height: u32) {
             let ray_dir = Vec3::normalize(ray_end - ray_start);
 
             // Test against scene
-            pixel.r = if intersect_sphere(ray_start, ray_dir, Vec3::ZERO, 3.0) > 0.0 {
-                255
-            } else {
-                0
-            };
+            let (hit, _hit_distance, _hit_position) =
+                intersect_sphere(ray_start, ray_dir, Vec3::ZERO, 3.0);
+
+            // Shade pixel
+            pixel.r = if hit { 255 } else { 0 };
             image.set_pixel(pixel_x, image_height - pixel_y - 1, pixel);
         }
     }
@@ -97,32 +97,35 @@ fn draw_scene(image: &mut bmp::Image, image_width: u32, image_height: u32) {
 
 // -----------------------------------------------------------------------------------------
 
-fn intersect_sphere(p: Vec3, d: Vec3, sc: Vec3, sr: f32) -> f32 {
+fn intersect_sphere(p: Vec3, d: Vec3, sc: Vec3, sr: f32) -> (bool, f32, Vec3) {
+    const NO_INTERSECTION: (bool, f32, Vec3) = (false, 0.0, Vec3::ZERO);
+
     let m: Vec3 = p - sc;
     let b: f32 = Vec3::dot(m, d);
     let c: f32 = Vec3::dot(m, m) - sr * sr;
 
     // Exit if r’s origin outside s (c > 0) and r pointing away from s (b > 0)
     if c > 0.0 && b > 0.0 {
-        return 0.0;
+        return NO_INTERSECTION;
     }
     let discr: f32 = b * b - c;
 
     // A negative discriminant corresponds to ray missing sphere
     if discr < 0.0 {
-        return 0.0;
+        return NO_INTERSECTION;
     }
 
     // Ray now found to intersect sphere, compute smallest t value of intersection
-    //let mut t: f32 = -b - discr.sqrt();
+    let mut hit_distance: f32 = -b - discr.sqrt();
 
     // If t is negative, ray started inside sphere so clamp t to zero
-    //if t < 0.0 {
-    //    t = 0.0;
-    //}
-    //q = p + t * d;
+    if hit_distance < 0.0 {
+        hit_distance = 0.0;
+    }
 
-    return 1.0;
+    // Return valid hit
+    let hit_position: Vec3 = p + (d * hit_distance);
+    return (true, hit_distance, hit_position);
 }
 
 // -----------------------------------------------------------------------------------------
