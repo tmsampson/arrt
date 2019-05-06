@@ -5,3 +5,4 @@ authors = ["drumm"]
 edition = "2018"
 
 [dependencies]
+bmp = "0.4.0"
