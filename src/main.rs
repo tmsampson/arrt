@@ -1,6 +1,7 @@
 // -----------------------------------------------------------------------------------------
 
 mod raytrace;
+use raytrace::camera::Camera;
 use raytrace::vector::Vec3;
 
 // -----------------------------------------------------------------------------------------
@@ -27,48 +28,34 @@ fn save_image(image: &bmp::Image, filename: &str) {
 // -----------------------------------------------------------------------------------------
 
 fn draw_scene(image: &mut bmp::Image, image_width: u32, image_height: u32) {
+    // Setup camera
+    let camera = Camera::new(Vec3::new(0.0, 10.0, -10.0), Vec3::new(0.0, 0.0, 0.0), 90.0);
+
     // Camera config
-    let camera_position = Vec3::new(0.0, 10.0, -10.0);
-    let camera_lookat = Vec3::new(0.0, 0.0, 0.0);
     let camera_aspect = image_width as f32 / image_height as f32;
-    let camera_fov: f32 = 90.0;
-    let camera_near = 1.0;
-    let camera_far = 10000.0;
 
     // Calculate frustum
-    let frustum_mult = (camera_fov * 0.5).tan();
-    let frustum_near_width = camera_near * frustum_mult * 2.0;
+    let frustum_mult = (camera.fov * 0.5).tan();
+    let frustum_near_width = camera.near_distance * frustum_mult * 2.0;
     let frustum_near_height = frustum_near_width / camera_aspect;
     let frustum_near_half_width = frustum_near_width * 0.5;
     let frustum_near_half_height = frustum_near_height * 0.5;
-    let frustum_far_width = camera_far * frustum_mult * 2.0;
+    let frustum_far_width = camera.far_distance * frustum_mult * 2.0;
     let frustum_far_height = frustum_far_width / camera_aspect;
     let frustum_far_half_width = frustum_far_width * 0.5;
     let frustum_far_half_height = frustum_far_height * 0.5;
 
-    // Calculate camera basis
-    let camera_forward = Vec3::normalize(camera_lookat - camera_position);
-    let camera_right = Vec3::normalize(Vec3::cross(Vec3::UP, camera_forward));
-    let camera_up = Vec3::normalize(Vec3::cross(camera_forward, camera_right));
-
-    raytrace::camera::cam_test(camera_forward);
-
-    // Print camera basis
-    Vec3::print(camera_right, "Camera right");
-    Vec3::print(camera_up, "Camera up");
-    Vec3::print(camera_forward, "Camera forwards");
-
     // Calculate frustum extents
     let frustum_near_extents: Vec3 =
-        (camera_right * frustum_near_half_width) + (camera_up * frustum_near_half_height);
+        (camera.right * frustum_near_half_width) + (camera.up * frustum_near_half_height);
     let frustum_far_extents: Vec3 =
-        (camera_right * frustum_far_half_width) + (camera_up * frustum_far_half_height);
+        (camera.right * frustum_far_half_width) + (camera.up * frustum_far_half_height);
 
     // Calculate frustum bottom left corners
     let frustum_near_bottom_left: Vec3 =
-        (camera_position + (camera_forward * camera_near)) - frustum_near_extents;
+        (camera.position + (camera.forward * camera.near_distance)) - frustum_near_extents;
     let frustum_far_bottom_left: Vec3 =
-        (camera_position + (camera_forward * camera_far)) - frustum_far_extents;
+        (camera.position + (camera.forward * camera.far_distance)) - frustum_far_extents;
 
     // For each pixel...
     let mut pixel = bmp::Pixel::new(0, 0, 0);
@@ -76,10 +63,10 @@ fn draw_scene(image: &mut bmp::Image, image_width: u32, image_height: u32) {
         let perc_x = pixel_x as f32 / image_width as f32;
         for pixel_y in 0..image_height {
             let perc_y = pixel_y as f32 / image_height as f32;
-            let near_offset = (camera_right * frustum_near_width * perc_x)
-                + (camera_up * frustum_near_height * perc_y);
-            let far_offset = (camera_right * frustum_far_width * perc_x)
-                + (camera_up * frustum_far_height * perc_y);
+            let near_offset = (camera.right * frustum_near_width * perc_x)
+                + (camera.up * frustum_near_height * perc_y);
+            let far_offset = (camera.right * frustum_far_width * perc_x)
+                + (camera.up * frustum_far_height * perc_y);
 
             // Calculate ray
             let ray_start = frustum_near_bottom_left + near_offset;
