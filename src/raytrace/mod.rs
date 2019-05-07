@@ -1,5 +1,5 @@
-pub mod camera;
-use camera::Vec3;
+pub mod vector;
+use vector::Vec3;
 
 pub fn cam_test(x: Vec3)
 {
