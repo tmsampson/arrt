@@ -1,7 +1,7 @@
 // -----------------------------------------------------------------------------------------
 
 mod vector;
-use vector::Vec3;
+use vector::camera::Vec3;
 
 // -----------------------------------------------------------------------------------------
 
@@ -50,6 +50,8 @@ fn draw_scene(image: &mut bmp::Image, image_width: u32, image_height: u32) {
     let camera_forward = Vec3::normalize(camera_lookat - camera_position);
     let camera_right = Vec3::normalize(Vec3::cross(Vec3::UP, camera_forward));
     let camera_up = Vec3::normalize(Vec3::cross(camera_forward, camera_right));
+
+    vector::cam_test(camera_forward);
 
     // Print camera basis
     Vec3::print(camera_right, "Camera right");
