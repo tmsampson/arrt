@@ -111,6 +111,7 @@ impl Vec3 {
 // -----------------------------------------------------------------------------------------
 // Helpers
 impl Vec3 {
+    #[allow(dead_code)]
     pub fn print(a: Vec3, label: &str) {
         println!("{} = [{:.2}, {:.2}, {:.2}]", label, a.x, a.y, a.z);
     }
