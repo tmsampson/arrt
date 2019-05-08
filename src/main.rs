@@ -29,21 +29,17 @@ fn save_image(image: &bmp::Image, filename: &str) {
 
 fn draw_scene(image: &mut bmp::Image, image_width: u32, image_height: u32) {
     // Setup camera
-    let camera = Camera::new(Vec3::new(0.0, 10.0, -10.0), Vec3::new(0.0, 0.0, 0.0), 90.0);
+    let camera = Camera::new(Vec3::new(0.0, 10.0, -10.0), Vec3::ZERO, 90.0);
 
     // Camera config
     let camera_aspect = image_width as f32 / image_height as f32;
 
     // Calculate frustum
     let frustum_mult = (camera.fov * 0.5).tan();
-    let frustum_near_width = camera.near_distance * frustum_mult * 2.0;
-    let frustum_near_height = frustum_near_width / camera_aspect;
-    let frustum_near_half_width = frustum_near_width * 0.5;
-    let frustum_near_half_height = frustum_near_height * 0.5;
-    let frustum_far_width = camera.far_distance * frustum_mult * 2.0;
-    let frustum_far_height = frustum_far_width / camera_aspect;
-    let frustum_far_half_width = frustum_far_width * 0.5;
-    let frustum_far_half_height = frustum_far_height * 0.5;
+    let frustum_near_half_width = camera.near_distance * frustum_mult;
+    let frustum_near_half_height = frustum_near_half_width / camera_aspect;
+    let frustum_far_half_width = camera.far_distance * frustum_mult;
+    let frustum_far_half_height = frustum_far_half_width / camera_aspect;
 
     // Calculate frustum extents
     let frustum_near_extents: Vec3 =
@@ -63,14 +59,12 @@ fn draw_scene(image: &mut bmp::Image, image_width: u32, image_height: u32) {
         let perc_x = pixel_x as f32 / image_width as f32;
         for pixel_y in 0..image_height {
             let perc_y = pixel_y as f32 / image_height as f32;
-            let near_offset = (camera.right * frustum_near_width * perc_x)
-                + (camera.up * frustum_near_height * perc_y);
-            let far_offset = (camera.right * frustum_far_width * perc_x)
-                + (camera.up * frustum_far_height * perc_y);
 
             // Calculate ray
-            let ray_start = frustum_near_bottom_left + near_offset;
-            let ray_end = frustum_far_bottom_left + far_offset;
+            let ray_start = frustum_near_bottom_left + (camera.right * frustum_near_half_width * 2.0 * perc_x)
+                + (camera.up * frustum_near_half_height * 2.0 * perc_y);
+            let ray_end = frustum_far_bottom_left + (camera.right * frustum_far_half_width * 2.0 * perc_x)
+                + (camera.up * frustum_far_half_height * 2.0 * perc_y);
             let ray_dir = Vec3::normalize(ray_end - ray_start);
 
             // Test against scene
