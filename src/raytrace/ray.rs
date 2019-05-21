@@ -10,3 +10,9 @@ pub struct Ray {
 }
 
 // -----------------------------------------------------------------------------------------
+
+impl Ray {
+    pub fn get_point(&self, t: f32) -> Vec3 {
+        self.origin + (self.direction * t)
+    }
+}

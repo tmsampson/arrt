@@ -106,6 +106,15 @@ impl Vec3 {
         let length = Vec3::length(a);
         a / length
     }
+
+    pub fn lerp(a: Vec3, b: Vec3, t: f32) -> Vec3 {
+        let inv_t = 1.0 - t;
+        Vec3::new(
+            (a.x * inv_t) + (b.x * t),
+            (a.y * inv_t) + (b.y * t),
+            (a.z * inv_t) + (b.z * t),
+        )
+    }
 }
 
 // -----------------------------------------------------------------------------------------
