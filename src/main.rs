@@ -8,6 +8,10 @@ use raytrace::vector::Vec3;
 
 // -----------------------------------------------------------------------------------------
 
+use rand::prelude::*;
+
+// -----------------------------------------------------------------------------------------
+
 fn main() {
     // Setup image
     const IMAGE_WIDTH: u32 = 640;
@@ -81,20 +85,40 @@ fn pixel_from_vector(v: Vec3) -> bmp::Pixel {
 
 fn draw_scene(image: &mut bmp::Image, image_width: u32, image_height: u32) {
     // Setup camera
-    let camera = Camera::new(Vec3::new(0.0, 1.0, -10.0), Vec3::ZERO, 90.0);
+    let camera = Camera::new(Vec3::new(0.0, 1.0, 10.0), Vec3::ZERO, 90.0);
     let tracer = Tracer::new(&camera, image_width, image_height);
+
+    // Setup sample offsets
+    const SAMPLES_PER_PIXEL: usize = 8;
+    const ADDITIONAL_SAMPLES: usize = SAMPLES_PER_PIXEL - 1;
+    let mut rng = rand::thread_rng();
+    let mut sample_offsets_x: [f32; ADDITIONAL_SAMPLES] = [0.0; ADDITIONAL_SAMPLES];
+    let mut sample_offsets_y: [f32; ADDITIONAL_SAMPLES] = [0.0; ADDITIONAL_SAMPLES];
+    for sample_index in 0..ADDITIONAL_SAMPLES {
+        sample_offsets_x[sample_index] = rng.gen();
+        sample_offsets_y[sample_index] = rng.gen();
+    }
 
     // For each pixel...
     for pixel_x in 0..image_width {
         for pixel_y in 0..image_height {
-            // Generate ray
-            let ray = tracer.get_ray(pixel_x, pixel_y);
+            let pixel_x_f = pixel_x as f32;
+            let pixel_y_f = pixel_y as f32;
 
-            // Sample scene
-            let colour = sample_scene(&ray);
+            // Sample centroid
+            let ray_centroid = tracer.get_ray(pixel_x_f, pixel_y_f);
+            let mut colour = sample_scene(&ray_centroid);
+
+            // Take additional samples
+            for sample_index in 0..ADDITIONAL_SAMPLES {
+                let offset_x = (sample_offsets_x[sample_index] - 0.5) * 0.99;
+                let offset_y = (sample_offsets_y[sample_index] - 0.5) * 0.99;
+                let ray = tracer.get_ray(pixel_x_f + offset_x, pixel_y_f + offset_y);
+                colour = colour + sample_scene(&ray);
+            }
 
             // Write pixel
-            let pixel = pixel_from_vector(colour);
+            let pixel = pixel_from_vector(colour / (SAMPLES_PER_PIXEL as f32));
             image.set_pixel(pixel_x, image_height - pixel_y - 1, pixel);
         }
     }

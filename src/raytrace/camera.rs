@@ -70,10 +70,10 @@ impl Tracer {
         }
     }
 
-    pub fn get_ray(&self, pixel_x: u32, pixel_y: u32) -> Ray {
+    pub fn get_ray(&self, pixel_x: f32, pixel_y: f32) -> Ray {
         let centroid_offset = self.pixel_size * 0.5;
-        let horizontal_offset = (pixel_x as f32 * self.pixel_size) + centroid_offset;
-        let vertical_offset = (pixel_y as f32 * self.pixel_size) + centroid_offset;
+        let horizontal_offset = (pixel_x * self.pixel_size) + centroid_offset;
+        let vertical_offset = (pixel_y * self.pixel_size) + centroid_offset;
         let near_position = self.near_origin
             + (self.frustum_right * horizontal_offset)
             + (self.frustum_up * vertical_offset);
