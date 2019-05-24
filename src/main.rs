@@ -88,10 +88,12 @@ fn draw_scene(image: &mut bmp::Image, image_width: u32, image_height: u32) {
     let camera = Camera::new(Vec3::new(0.0, 1.0, 10.0), Vec3::ZERO, 90.0);
     let tracer = Tracer::new(&camera, image_width, image_height);
 
-    // Setup sample offsets
+    // Setup RNG
+    let mut rng: StdRng = SeedableRng::seed_from_u64(0);
+
+    // Generate random sampling offsets
     const SAMPLES_PER_PIXEL: usize = 8;
     const ADDITIONAL_SAMPLES: usize = SAMPLES_PER_PIXEL - 1;
-    let mut rng = rand::thread_rng();
     let mut sample_offsets_x: [f32; ADDITIONAL_SAMPLES] = [0.0; ADDITIONAL_SAMPLES];
     let mut sample_offsets_y: [f32; ADDITIONAL_SAMPLES] = [0.0; ADDITIONAL_SAMPLES];
     for sample_index in 0..ADDITIONAL_SAMPLES {
