@@ -1,17 +1,21 @@
 Todo:
-  ☐ Add multiple spheres
   ☐ Implement high-resolution timer + print key stats
   ☐ Collect bounce stats
   ☐ Add random helpers
   ☐ Add winit window
   ☐ Add build task to set as wallpaper
-  ☐ Add support for multiple spheres
   ☐ Load scene from file
   ☐ Different primitives
   ☐ Spatial partitioning
-  ☐ Volume texturing
+  ☐ Materials
+    ☐ Volume texturing
+    ☐ Implement ice/refraction
+    ☐ Mirror
+    ☐ Marble
+    ☐ Granite
   ☐ Multi-threading
   ☐ Distance fields
+  ✔ Add multiple spheres @done(19-05-27 17:23)
   ✔ Move all config variables into single structure @done(19-05-27 16:17)
   ✔ Fix hit distance checks @done(19-05-27 15:43)
   ✔ Add progress meter @done(19-05-27 15:42)
