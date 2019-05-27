@@ -1,5 +1,6 @@
 Todo:
   ☐ Add multiple spheres
+  ☐ Implement high-resolution timer + print key stats
   ☐ Collect bounce stats
   ☐ Add random helpers
   ☐ Add winit window
