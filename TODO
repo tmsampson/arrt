@@ -1,4 +1,10 @@
 Todo:
+  ☐ Fix hit distance checks
+  ☐ Add random helpers
+  ☐ Add winit window
+  ☐ Add progress meter
+  ☐ Add build task to set as wallpaper
+  ☐ Add support for multiple spheres
   ☐ Load scene from file
   ☐ Different primitives
   ☐ Spatial partitioning
