@@ -12,35 +12,58 @@ use raytrace::vector::Vec3;
 use rand::prelude::*;
 
 // -----------------------------------------------------------------------------------------
+// Config | Image
+const IMAGE_FILENAME: &str = "output.bmp";
+const IMAGE_WIDTH: u32 = 640;
+const IMAGE_HEIGHT: u32 = 480;
 
-// use std::thread;
-// fn main() {
-//     const STACK_SIZE: usize = 40 * 1024 * 1024;
+// -----------------------------------------------------------------------------------------
+// Config | Rendering
+const RNG_SEED: u64 = 0;
+const SAMPLES_PER_PIXEL: usize = 8;
 
-//     // Spawn thread with explicit stack size
-//     let child = thread::Builder::new()
-//         .name("raytracer".into())
-//         .stack_size(STACK_SIZE)
-//         .spawn(run)
-//         .unwrap();
+// -----------------------------------------------------------------------------------------
+// Config | Camera
+const CAMERA_FOV: f32 = 90.0;
+const CAMERA_POSITION: Vec3 = Vec3 {
+    x: 0.0,
+    y: 1.0,
+    z: 3.0,
+};
+const CAMERA_LOOKAT: Vec3 = Vec3 {
+    x: 0.0,
+    y: 1.0,
+    z: 0.0,
+};
 
-//     // Wait for thread to join
-//     child.join().unwrap();
-// }
+// -----------------------------------------------------------------------------------------
+// Config | Sky
+const SKY_COLOUR_BOTTOM: Vec3 = Vec3 {
+    x: 1.0,
+    y: 1.0,
+    z: 1.0,
+};
+const SKY_COLOUR_TOP: Vec3 = Vec3 {
+    x: 0.5,
+    y: 0.7,
+    z: 1.0,
+};
+
+// -----------------------------------------------------------------------------------------
+// Config | Debug
+const DEBUG_NORMALS: bool = false;
 
 // -----------------------------------------------------------------------------------------
 
 fn main() {
     // Setup image
-    const IMAGE_WIDTH: u32 = 640;
-    const IMAGE_HEIGHT: u32 = 480;
     let mut image = bmp::Image::new(IMAGE_WIDTH, IMAGE_HEIGHT);
 
     // Draw scene
-    draw_scene(&mut image, IMAGE_WIDTH, IMAGE_HEIGHT);
+    draw_scene(&mut image);
 
     // Save image
-    save_image(&image, "output.bmp");
+    save_image(&image, IMAGE_FILENAME);
 }
 
 // -----------------------------------------------------------------------------------------
@@ -52,26 +75,23 @@ fn save_image(image: &bmp::Image, filename: &str) {
 // -----------------------------------------------------------------------------------------
 
 fn sample_background(ray: &Ray) -> Vec3 {
-    let colour_bottom = Vec3::new(1.0, 1.0, 1.0);
-    let colour_top = Vec3::new(0.5, 0.7, 1.0);
     let t = (ray.direction.y + 1.0) * 0.5;
-    Vec3::lerp(colour_bottom, colour_top, t)
+    Vec3::lerp(SKY_COLOUR_BOTTOM, SKY_COLOUR_TOP, t)
 }
 
 // -----------------------------------------------------------------------------------------
 
-fn draw_scene(image: &mut bmp::Image, image_width: u32, image_height: u32) {
+fn draw_scene(image: &mut bmp::Image) {
     // Setup camera
-    let camera_position = Vec3::new(0.0, 1.0, 3.0);
-    let camera_lookat = Vec3::new(0.0, 1.0, 0.0);
-    let camera = Camera::new(camera_position, camera_lookat, 90.0);
+    let image_width = image.get_width();
+    let image_height = image.get_height();
+    let camera = Camera::new(CAMERA_POSITION, CAMERA_LOOKAT, CAMERA_FOV);
     let tracer = Tracer::new(&camera, image_width, image_height);
 
     // Setup RNG
-    let mut rng: StdRng = SeedableRng::seed_from_u64(0);
+    let mut rng: StdRng = SeedableRng::seed_from_u64(RNG_SEED);
 
     // Generate random sampling offsets
-    const SAMPLES_PER_PIXEL: usize = 8;
     const ADDITIONAL_SAMPLES: usize = SAMPLES_PER_PIXEL - 1;
     let mut sample_offsets_x: [f32; ADDITIONAL_SAMPLES] = [0.0; ADDITIONAL_SAMPLES];
     let mut sample_offsets_y: [f32; ADDITIONAL_SAMPLES] = [0.0; ADDITIONAL_SAMPLES];
@@ -133,7 +153,6 @@ fn sample_scene(ray: &Ray, rng: &mut StdRng) -> Vec3 {
     }
 
     // Debug normals?
-    const DEBUG_NORMALS: bool = false;
     if DEBUG_NORMALS {
         return Vec3::new(
             (result.normal.x + 1.0) * 0.5,

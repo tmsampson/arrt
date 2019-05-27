@@ -1,7 +1,6 @@
 Todo:
   ☐ Add multiple spheres
   ☐ Collect bounce stats
-  ☐ Move all config variables into single structure
   ☐ Add random helpers
   ☐ Add winit window
   ☐ Add build task to set as wallpaper
@@ -11,5 +10,7 @@ Todo:
   ☐ Spatial partitioning
   ☐ Volume texturing
   ☐ Multi-threading
+  ☐ Distance fields
+  ✔ Move all config variables into single structure @done(19-05-27 16:17)
   ✔ Fix hit distance checks @done(19-05-27 15:43)
   ✔ Add progress meter @done(19-05-27 15:42)
