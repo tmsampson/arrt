@@ -9,7 +9,7 @@ use super::vector::Vec3;
 // -----------------------------------------------------------------------------------------
 
 pub fn ray_plane(ray: &Ray, plane: &Plane) -> RayHitResult {
-    const TOLLERANCE: f32 = 0.00001;
+    const TOLLERANCE: f32 = 0.001;
     let denom = Vec3::dot(plane.normal, ray.direction);
     if denom.abs() > TOLLERANCE {
         let plane_to_ray = plane.position - ray.origin;
@@ -53,8 +53,15 @@ pub fn ray_sphere(ray: &Ray, sphere: &Sphere) -> RayHitResult {
     }
 
     // Return valid hit
+    const TOLLERANCE: f32 = 0.001;
     let hit_position: Vec3 = ray.origin + (ray.direction * hit_distance);
-    RayHitResult::new(true, hit_distance, hit_position, Vec3::UP, sphere.diffuse)
+    RayHitResult::new(
+        hit_distance > TOLLERANCE,
+        hit_distance,
+        hit_position,
+        Vec3::UP,
+        sphere.diffuse,
+    )
 }
 
 // -----------------------------------------------------------------------------------------

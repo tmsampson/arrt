@@ -22,8 +22,8 @@ const IMAGE_HEIGHT: u32 = 810;
 // -----------------------------------------------------------------------------------------
 // Config | Rendering
 const RNG_SEED: u64 = 0;
-const SAMPLES_PER_PIXEL: usize = 64;
-const MAX_BOUNCES: u32 = 32;
+const SAMPLES_PER_PIXEL: usize = 128;
+const MAX_BOUNCES: u32 = 64;
 
 // -----------------------------------------------------------------------------------------
 // Config | Camera

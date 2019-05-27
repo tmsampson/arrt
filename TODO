@@ -1,5 +1,8 @@
 Todo:
   ☐ Implement high-resolution timer + print key stats
+  ☐ Implement quality profiles
+  ☐ Implement per pixel debugging (bounces, timer, material, hit info etc)
+  ☐ Implement bounce heatmap
   ☐ Collect bounce stats
   ☐ Add "random" helpers
   ☐ Add winit window
