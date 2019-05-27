@@ -52,6 +52,7 @@ const SKY_COLOUR_TOP: Vec3 = Vec3 {
 // -----------------------------------------------------------------------------------------
 // Config | Debug
 const DEBUG_NORMALS: bool = false;
+const DEBUG_SHOW_PROGRESS: bool = false;
 
 // -----------------------------------------------------------------------------------------
 
@@ -100,11 +101,17 @@ fn draw_scene(image: &mut bmp::Image) {
         sample_offsets_y[sample_index] = rng.gen();
     }
 
-    // For each pixel...
+    // For each scanline...
     let mut pixel = bmp::Pixel::new(0, 0, 0);
     for pixel_y in 0..image_height {
         let pixel_y_f = pixel_y as f32;
-        println!("Tracing scanline {} / {}", pixel_y + 1, image_height);
+
+        // Show progress?
+        if DEBUG_SHOW_PROGRESS {
+            println!("Tracing scanline {} / {}", pixel_y + 1, image_height);
+        }
+
+        // For each column
         for pixel_x in 0..image_width {
             let pixel_x_f = pixel_x as f32;
 
@@ -162,7 +169,7 @@ fn sample_scene(ray: &Ray, rng: &mut StdRng) -> Vec3 {
     }
 
     // Shade pixel (diffuse)
-    let absorbed = 0.5;
+    let absorbed = 0.3;
     let reflected = 1.0 - absorbed;
     let refelcted_point = result.position + result.normal + Vec3::random_point_in_unit_sphere(rng);
     let reflected_ray_origin = result.position + (result.normal * 0.00001);
