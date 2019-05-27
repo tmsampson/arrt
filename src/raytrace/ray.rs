@@ -10,6 +10,14 @@ pub struct Ray {
 }
 
 // -----------------------------------------------------------------------------------------
+// Constructor
+impl Ray {
+    pub fn new(origin: Vec3, direction: Vec3) -> Ray {
+        Ray { origin, direction }
+    }
+}
+
+// -----------------------------------------------------------------------------------------
 
 impl Ray {
     pub fn get_point(&self, t: f32) -> Vec3 {
