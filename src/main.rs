@@ -74,15 +74,6 @@ fn sample_scene(ray: &Ray) -> Vec3 {
 
 // -----------------------------------------------------------------------------------------
 
-fn pixel_from_vector(v: Vec3) -> bmp::Pixel {
-    let r = (v.x * 255.0) as u8;
-    let g = (v.y * 255.0) as u8;
-    let b = (v.z * 255.0) as u8;
-    bmp::Pixel::new(r, g, b)
-}
-
-// -----------------------------------------------------------------------------------------
-
 fn draw_scene(image: &mut bmp::Image, image_width: u32, image_height: u32) {
     // Setup camera
     let camera = Camera::new(Vec3::new(0.0, 1.0, 10.0), Vec3::ZERO, 90.0);
@@ -102,6 +93,7 @@ fn draw_scene(image: &mut bmp::Image, image_width: u32, image_height: u32) {
     }
 
     // For each pixel...
+    let mut pixel = bmp::Pixel::new(0, 0, 0);
     for pixel_x in 0..image_width {
         for pixel_y in 0..image_height {
             let pixel_x_f = pixel_x as f32;
@@ -119,8 +111,11 @@ fn draw_scene(image: &mut bmp::Image, image_width: u32, image_height: u32) {
                 colour = colour + sample_scene(&ray);
             }
 
+            // Average samples and store in pixel
+            colour = colour / (SAMPLES_PER_PIXEL as f32);
+            Vec3::copy_to_pixel(colour, &mut pixel);
+
             // Write pixel
-            let pixel = pixel_from_vector(colour / (SAMPLES_PER_PIXEL as f32));
             image.set_pixel(pixel_x, image_height - pixel_y - 1, pixel);
         }
     }
