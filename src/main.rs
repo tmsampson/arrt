@@ -3,6 +3,8 @@
 mod raytrace;
 use raytrace::camera::Camera;
 use raytrace::camera::Tracer;
+use raytrace::geometry::Plane;
+use raytrace::geometry::Sphere;
 use raytrace::ray::Ray;
 use raytrace::ray::RayHitResult;
 use raytrace::vector::Vec3;
@@ -14,8 +16,8 @@ use rand::prelude::*;
 // -----------------------------------------------------------------------------------------
 // Config | Image
 const IMAGE_FILENAME: &str = "output.bmp";
-const IMAGE_WIDTH: u32 = 640;
-const IMAGE_HEIGHT: u32 = 480;
+const IMAGE_WIDTH: u32 = 320;
+const IMAGE_HEIGHT: u32 = 240;
 
 // -----------------------------------------------------------------------------------------
 // Config | Rendering
@@ -27,12 +29,12 @@ const SAMPLES_PER_PIXEL: usize = 8;
 const CAMERA_FOV: f32 = 90.0;
 const CAMERA_POSITION: Vec3 = Vec3 {
     x: 0.0,
-    y: 1.0,
-    z: 3.0,
+    y: 3.0,
+    z: 20.0,
 };
 const CAMERA_LOOKAT: Vec3 = Vec3 {
     x: 0.0,
-    y: 1.0,
+    y: 3.0,
     z: 0.0,
 };
 
@@ -48,6 +50,35 @@ const SKY_COLOUR_TOP: Vec3 = Vec3 {
     y: 0.7,
     z: 1.0,
 };
+
+// -----------------------------------------------------------------------------------------
+// Config | Scene
+const SCENE_SPHERES: [Sphere; 3] = [
+    Sphere {
+        centre: Vec3 {
+            x: 0.0,
+            y: 3.0,
+            z: 0.0,
+        },
+        radius: 3.0,
+    },
+    Sphere {
+        centre: Vec3 {
+            x: -6.5,
+            y: 3.0,
+            z: 0.0,
+        },
+        radius: 3.0,
+    },
+    Sphere {
+        centre: Vec3 {
+            x: 6.5,
+            y: 3.0,
+            z: 0.0,
+        },
+        radius: 3.0,
+    },
+];
 
 // -----------------------------------------------------------------------------------------
 // Config | Debug
@@ -181,13 +212,21 @@ fn sample_scene(ray: &Ray, rng: &mut StdRng) -> Vec3 {
 // -----------------------------------------------------------------------------------------
 
 fn sample_scene_spheres(ray: &Ray) -> RayHitResult {
-    let sphere_position = Vec3::new(0.0, 1.0, 0.0);
-    let sphere_radius = 1.0;
+    // Process all spheres
+    let mut closest_result = RayHitResult::MAX_HIT;
+    let mut closest_sphere_centre = Vec3::ZERO;
+    for sphere in &SCENE_SPHERES {
+        let result = raytrace::intersect::ray_sphere(&ray, &sphere);
+        if result.hit && (result.distance < closest_result.distance) {
+            closest_result = result;
+            closest_sphere_centre = sphere.centre;
+        }
+    }
 
-    let mut result = raytrace::intersect::ray_sphere(&ray, sphere_position, sphere_radius);
-    if result.hit {
-        result.normal = Vec3::normalize(result.position - sphere_position);
-        result
+    // Calculate normal (if valid hit)
+    if closest_result.hit {
+        closest_result.normal = Vec3::normalize(closest_result.position - closest_sphere_centre);
+        closest_result
     } else {
         RayHitResult::NO_HIT
     }
@@ -196,7 +235,11 @@ fn sample_scene_spheres(ray: &Ray) -> RayHitResult {
 // -----------------------------------------------------------------------------------------
 
 fn sample_scene_planes(ray: &Ray) -> RayHitResult {
-    raytrace::intersect::ray_plane(&ray, Vec3::ZERO, Vec3::UP)
+    let plane = Plane {
+        position: Vec3::ZERO,
+        normal: Vec3::UP,
+    };
+    raytrace::intersect::ray_plane(&ray, &plane)
 }
 
 // -----------------------------------------------------------------------------------------

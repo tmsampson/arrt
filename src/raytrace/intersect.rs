@@ -1,30 +1,31 @@
 // -----------------------------------------------------------------------------------------
 
+use super::geometry::Plane;
+use super::geometry::Sphere;
 use super::ray::Ray;
 use super::ray::RayHitResult;
 use super::vector::Vec3;
 
 // -----------------------------------------------------------------------------------------
 
-pub fn ray_plane(ray: &Ray, plane_position: Vec3, plane_normal: Vec3) -> RayHitResult {
+pub fn ray_plane(ray: &Ray, plane: &Plane) -> RayHitResult {
     const TOLLERANCE: f32 = 0.00001;
-
-    let denom = Vec3::dot(plane_normal, ray.direction);
+    let denom = Vec3::dot(plane.normal, ray.direction);
     if denom.abs() > TOLLERANCE {
-        let plane_to_ray = plane_position - ray.origin;
-        let t = Vec3::dot(plane_to_ray, plane_normal) / denom;
-        return RayHitResult::new(t > TOLLERANCE, t, ray.get_point(t), plane_normal);
+        let plane_to_ray = plane.position - ray.origin;
+        let t = Vec3::dot(plane_to_ray, plane.normal) / denom;
+        RayHitResult::new(t > TOLLERANCE, t, ray.get_point(t), plane.normal)
     } else {
-        return RayHitResult::NO_HIT;
+        RayHitResult::NO_HIT
     }
 }
 
 // -----------------------------------------------------------------------------------------
 
-pub fn ray_sphere(ray: &Ray, sphere_position: Vec3, sphere_radius: f32) -> RayHitResult {
-    let m: Vec3 = ray.origin - sphere_position;
+pub fn ray_sphere(ray: &Ray, sphere: &Sphere) -> RayHitResult {
+    let m: Vec3 = ray.origin - sphere.centre;
     let b: f32 = Vec3::dot(m, ray.direction);
-    let c: f32 = Vec3::dot(m, m) - sphere_radius * sphere_radius;
+    let c: f32 = Vec3::dot(m, m) - (sphere.radius * sphere.radius);
 
     // Exit if r’s origin outside s (c > 0) and r pointing away from s (b > 0)
     if c > 0.0 && b > 0.0 {
