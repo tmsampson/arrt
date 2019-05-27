@@ -66,7 +66,7 @@ fn sample_scene(ray: &Ray) -> Vec3 {
     if hit_sphere {
         hit_normal
     } else if hit_plane {
-        Vec3::new(0.2, 0.2, 0.4)
+        Vec3::new(0.1, 0.1, 0.2)
     } else {
         sample_background(&ray, background_colour_bottom, background_colour_top)
     }
@@ -108,11 +108,11 @@ fn draw_scene(image: &mut bmp::Image, image_width: u32, image_height: u32) {
                 let offset_x = (sample_offsets_x[sample_index] - 0.5) * 0.99;
                 let offset_y = (sample_offsets_y[sample_index] - 0.5) * 0.99;
                 let ray = tracer.get_ray(pixel_x_f + offset_x, pixel_y_f + offset_y);
-                colour = colour + sample_scene(&ray);
+                colour += sample_scene(&ray);
             }
 
             // Average samples and store in pixel
-            colour = colour / (SAMPLES_PER_PIXEL as f32);
+            colour /= SAMPLES_PER_PIXEL as f32;
             Vec3::copy_to_pixel(colour, &mut pixel);
 
             // Write pixel
