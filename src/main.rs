@@ -16,13 +16,14 @@ use rand::prelude::*;
 // -----------------------------------------------------------------------------------------
 // Config | Image
 const IMAGE_FILENAME: &str = "output.bmp";
-const IMAGE_WIDTH: u32 = 320;
-const IMAGE_HEIGHT: u32 = 240;
+const IMAGE_WIDTH: u32 = 1440;
+const IMAGE_HEIGHT: u32 = 810;
 
 // -----------------------------------------------------------------------------------------
 // Config | Rendering
 const RNG_SEED: u64 = 0;
-const SAMPLES_PER_PIXEL: usize = 8;
+const SAMPLES_PER_PIXEL: usize = 64;
+const MAX_BOUNCES: u32 = 32;
 
 // -----------------------------------------------------------------------------------------
 // Config | Camera
@@ -30,7 +31,7 @@ const CAMERA_FOV: f32 = 90.0;
 const CAMERA_POSITION: Vec3 = Vec3 {
     x: 0.0,
     y: 3.0,
-    z: 20.0,
+    z: -20.0,
 };
 const CAMERA_LOOKAT: Vec3 = Vec3 {
     x: 0.0,
@@ -56,19 +57,29 @@ const SKY_COLOUR_TOP: Vec3 = Vec3 {
 const SCENE_SPHERES: [Sphere; 3] = [
     Sphere {
         centre: Vec3 {
-            x: 0.0,
-            y: 3.0,
-            z: 0.0,
-        },
-        radius: 3.0,
-    },
-    Sphere {
-        centre: Vec3 {
             x: -6.5,
             y: 3.0,
             z: 0.0,
         },
         radius: 3.0,
+        diffuse: Vec3 {
+            x: 1.0,
+            y: 0.0,
+            z: 0.0,
+        },
+    },
+    Sphere {
+        centre: Vec3 {
+            x: 0.0,
+            y: 3.0,
+            z: 0.0,
+        },
+        radius: 3.0,
+        diffuse: Vec3 {
+            x: 0.0,
+            y: 1.0,
+            z: 0.0,
+        },
     },
     Sphere {
         centre: Vec3 {
@@ -77,13 +88,18 @@ const SCENE_SPHERES: [Sphere; 3] = [
             z: 0.0,
         },
         radius: 3.0,
+        diffuse: Vec3 {
+            x: 0.0,
+            y: 0.0,
+            z: 1.0,
+        },
     },
 ];
 
 // -----------------------------------------------------------------------------------------
 // Config | Debug
 const DEBUG_NORMALS: bool = false;
-const DEBUG_SHOW_PROGRESS: bool = false;
+const DEBUG_SHOW_PROGRESS: bool = true;
 
 // -----------------------------------------------------------------------------------------
 
@@ -147,15 +163,17 @@ fn draw_scene(image: &mut bmp::Image) {
             let pixel_x_f = pixel_x as f32;
 
             // Sample centroid
+            let mut bounces = 0;
             let ray_centroid = tracer.get_ray(pixel_x_f, pixel_y_f);
-            let mut colour = sample_scene(&ray_centroid, &mut rng);
+            let mut colour = sample_scene(&ray_centroid, &mut rng, &mut bounces);
 
             // Take additional samples
             for sample_index in 0..ADDITIONAL_SAMPLES {
+                let mut bounces = 0;
                 let offset_x = (sample_offsets_x[sample_index] - 0.5) * 0.99;
                 let offset_y = (sample_offsets_y[sample_index] - 0.5) * 0.99;
                 let ray = tracer.get_ray(pixel_x_f + offset_x, pixel_y_f + offset_y);
-                colour += sample_scene(&ray, &mut rng);
+                colour += sample_scene(&ray, &mut rng, &mut bounces);
             }
 
             // Average samples and store in pixel
@@ -170,8 +188,11 @@ fn draw_scene(image: &mut bmp::Image) {
 
 // -----------------------------------------------------------------------------------------
 
-fn sample_scene(ray: &Ray, rng: &mut StdRng) -> Vec3 {
+fn sample_scene(ray: &Ray, rng: &mut StdRng, bounces: &mut u32) -> Vec3 {
     let mut result = RayHitResult::MAX_HIT;
+
+    // Manage bounces
+    *bounces += 1;
 
     // Test against spheres
     let sphere_result = sample_scene_spheres(ray);
@@ -206,7 +227,11 @@ fn sample_scene(ray: &Ray, rng: &mut StdRng) -> Vec3 {
     let reflected_ray_origin = result.position + (result.normal * 0.00001);
     let refelcted_ray_direction = Vec3::normalize(refelcted_point - result.position);
     let reflected_ray = Ray::new(reflected_ray_origin, refelcted_ray_direction);
-    sample_scene(&reflected_ray, rng) * reflected
+    if *bounces < MAX_BOUNCES {
+        sample_scene(&reflected_ray, rng, bounces) * result.diffuse * reflected
+    } else {
+        result.diffuse * reflected
+    }
 }
 
 // -----------------------------------------------------------------------------------------
@@ -238,6 +263,7 @@ fn sample_scene_planes(ray: &Ray) -> RayHitResult {
     let plane = Plane {
         position: Vec3::ZERO,
         normal: Vec3::UP,
+        diffuse: Vec3::ONE,
     };
     raytrace::intersect::ray_plane(&ray, &plane)
 }

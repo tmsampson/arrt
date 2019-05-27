@@ -1,12 +1,15 @@
 Todo:
   ☐ Implement high-resolution timer + print key stats
   ☐ Collect bounce stats
-  ☐ Add random helpers
+  ☐ Add "random" helpers
   ☐ Add winit window
   ☐ Add build task to set as wallpaper
   ☐ Load scene from file
   ☐ Different primitives
-  ☐ Spatial partitioning
+    ☐ Cube
+    ☐ Shapes
+    ☐ Signed distance fields
+  ☐ Scene spatial partitioning
   ☐ Materials
     ☐ Volume texturing
     ☐ Implement ice/refraction
@@ -14,7 +17,12 @@ Todo:
     ☐ Marble
     ☐ Granite
   ☐ Multi-threading
-  ☐ Distance fields
+  ☐ Post processing
+    ☐ Chromatic abberation
+    ☐ Vignette
+    ☐ Per-pixel motion blur
+    ☐ Tone mapping
+  ✔ Introduce MAX_BOUNCES (prevent stack overflow) @done(19-05-27 18:33)
   ✔ Add multiple spheres @done(19-05-27 17:23)
   ✔ Move all config variables into single structure @done(19-05-27 16:17)
   ✔ Fix hit distance checks @done(19-05-27 15:43)

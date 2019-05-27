@@ -14,7 +14,13 @@ pub fn ray_plane(ray: &Ray, plane: &Plane) -> RayHitResult {
     if denom.abs() > TOLLERANCE {
         let plane_to_ray = plane.position - ray.origin;
         let t = Vec3::dot(plane_to_ray, plane.normal) / denom;
-        RayHitResult::new(t > TOLLERANCE, t, ray.get_point(t), plane.normal)
+        RayHitResult::new(
+            t > TOLLERANCE,
+            t,
+            ray.get_point(t),
+            plane.normal,
+            plane.diffuse,
+        )
     } else {
         RayHitResult::NO_HIT
     }
@@ -48,7 +54,7 @@ pub fn ray_sphere(ray: &Ray, sphere: &Sphere) -> RayHitResult {
 
     // Return valid hit
     let hit_position: Vec3 = ray.origin + (ray.direction * hit_distance);
-    RayHitResult::new(true, hit_distance, hit_position, Vec3::UP)
+    RayHitResult::new(true, hit_distance, hit_position, Vec3::UP, sphere.diffuse)
 }
 
 // -----------------------------------------------------------------------------------------

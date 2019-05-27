@@ -7,6 +7,7 @@ use super::vector::Vec3;
 pub struct Sphere {
 	pub centre: Vec3,
 	pub radius: f32,
+	pub diffuse: Vec3,
 }
 
 // -----------------------------------------------------------------------------------------
@@ -14,6 +15,7 @@ pub struct Sphere {
 pub struct Plane {
 	pub position: Vec3,
 	pub normal: Vec3,
+	pub diffuse: Vec3,
 }
 
 // -----------------------------------------------------------------------------------------

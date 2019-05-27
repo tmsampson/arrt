@@ -33,17 +33,25 @@ pub struct RayHitResult {
     pub distance: f32,
     pub position: Vec3,
     pub normal: Vec3,
+    pub diffuse: Vec3,
 }
 
 // -----------------------------------------------------------------------------------------
 // RayHitResult Constructor
 impl RayHitResult {
-    pub fn new(hit: bool, distance: f32, position: Vec3, normal: Vec3) -> RayHitResult {
+    pub fn new(
+        hit: bool,
+        distance: f32,
+        position: Vec3,
+        normal: Vec3,
+        diffuse: Vec3,
+    ) -> RayHitResult {
         RayHitResult {
             hit,
             distance,
             position,
             normal,
+            diffuse,
         }
     }
 }
@@ -56,6 +64,7 @@ impl RayHitResult {
         distance: 0.0,
         position: Vec3::ZERO,
         normal: Vec3::UP,
+        diffuse: Vec3::ZERO,
     };
 
     pub const MAX_HIT: RayHitResult = RayHitResult {
@@ -63,6 +72,7 @@ impl RayHitResult {
         distance: std::f32::MAX,
         position: Vec3::ZERO,
         normal: Vec3::UP,
+        diffuse: Vec3::ZERO,
     };
 }
 
