@@ -51,7 +51,7 @@ impl Tracer {
         let aspect = image_width as f32 / image_height as f32;
 
         // Calculate frustum
-        let near_half_width = camera.near_distance * (camera.fov * 0.5).tan();
+        let near_half_width = camera.near_distance * (camera.fov * 0.5).to_radians().tan();
         let near_half_height = near_half_width / aspect;
         let near_width = near_half_width * 2.0;
 
