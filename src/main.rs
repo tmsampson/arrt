@@ -16,22 +16,22 @@ use rand::prelude::*;
 // -----------------------------------------------------------------------------------------
 // Config | Image
 const IMAGE_FILENAME: &str = "output.bmp";
-const IMAGE_WIDTH: u32 = 1440;
-const IMAGE_HEIGHT: u32 = 810;
+const IMAGE_WIDTH: u32 = 640; //1440;
+const IMAGE_HEIGHT: u32 = 480; // 810;
 
 // -----------------------------------------------------------------------------------------
 // Config | Rendering
 const RNG_SEED: u64 = 0;
-const SAMPLES_PER_PIXEL: usize = 128;
-const MAX_BOUNCES: u32 = 64;
+const SAMPLES_PER_PIXEL: usize = 32;
+const MAX_BOUNCES: u32 = 32;
 
 // -----------------------------------------------------------------------------------------
 // Config | Camera
 const CAMERA_FOV: f32 = 90.0;
 const CAMERA_POSITION: Vec3 = Vec3 {
     x: 0.0,
-    y: 3.0,
-    z: -20.0,
+    y: 12.0,
+    z: -7.0,
 };
 const CAMERA_LOOKAT: Vec3 = Vec3 {
     x: 0.0,

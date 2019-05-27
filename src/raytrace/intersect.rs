@@ -14,13 +14,12 @@ pub fn ray_plane(ray: &Ray, plane: &Plane) -> RayHitResult {
     if denom.abs() > TOLLERANCE {
         let plane_to_ray = plane.position - ray.origin;
         let t = Vec3::dot(plane_to_ray, plane.normal) / denom;
-        RayHitResult::new(
-            t > TOLLERANCE,
-            t,
-            ray.get_point(t),
-            plane.normal,
-            plane.diffuse,
-        )
+        let hit_pos = ray.get_point(t);
+        let row = (hit_pos.z * 0.25).round().abs() % 2.0;
+        let col = (hit_pos.x * 0.25).round().abs() % 2.0;
+        let pick = (row + col) % 2.0;
+        let diffuse = Vec3::lerp(plane.diffuse, plane.diffuse * 0.5, pick);
+        RayHitResult::new(t > TOLLERANCE, t, hit_pos, plane.normal, diffuse)
     } else {
         RayHitResult::NO_HIT
     }
