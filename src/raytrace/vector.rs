@@ -1,5 +1,6 @@
 // -----------------------------------------------------------------------------------------
 
+use rand::prelude::*;
 use std::ops;
 
 // -----------------------------------------------------------------------------------------
@@ -24,6 +25,11 @@ impl Vec3 {
         y: 0.0,
         z: 0.0,
     };
+    pub const ONE: Vec3 = Vec3 {
+        x: 1.0,
+        y: 1.0,
+        z: 1.0,
+    };
 }
 
 // -----------------------------------------------------------------------------------------
@@ -45,7 +51,9 @@ impl ops::Add<Vec3> for Vec3 {
 
 impl ops::AddAssign<Vec3> for Vec3 {
     fn add_assign(&mut self, rhs: Vec3) {
-        *self = Vec3::new(self.x + rhs.x, self.y + rhs.y, self.z + rhs.z)
+        self.x += rhs.x;
+        self.y += rhs.y;
+        self.z += rhs.z;
     }
 }
 
@@ -58,7 +66,9 @@ impl ops::Sub<Vec3> for Vec3 {
 
 impl ops::SubAssign<Vec3> for Vec3 {
     fn sub_assign(&mut self, rhs: Vec3) {
-        *self = Vec3::new(self.x - rhs.x, self.y - rhs.y, self.z - rhs.z)
+        self.x -= rhs.x;
+        self.y -= rhs.y;
+        self.z -= rhs.z;
     }
 }
 
@@ -71,7 +81,9 @@ impl ops::Mul<Vec3> for Vec3 {
 
 impl ops::MulAssign<Vec3> for Vec3 {
     fn mul_assign(&mut self, rhs: Vec3) {
-        *self = Vec3::new(self.x * rhs.x, self.y * rhs.y, self.z * rhs.z)
+        self.x *= rhs.x;
+        self.y *= rhs.y;
+        self.z *= rhs.z;
     }
 }
 
@@ -84,7 +96,9 @@ impl ops::Div<Vec3> for Vec3 {
 
 impl ops::DivAssign<Vec3> for Vec3 {
     fn div_assign(&mut self, rhs: Vec3) {
-        *self = Vec3::new(self.x / rhs.x, self.y / rhs.y, self.z / rhs.z)
+        self.x /= rhs.x;
+        self.y /= rhs.y;
+        self.z /= rhs.z;
     }
 }
 
@@ -99,7 +113,9 @@ impl ops::Mul<f32> for Vec3 {
 
 impl ops::MulAssign<f32> for Vec3 {
     fn mul_assign(&mut self, rhs: f32) {
-        *self = Vec3::new(self.x * rhs, self.y * rhs, self.z * rhs)
+        self.x *= rhs;
+        self.y *= rhs;
+        self.z *= rhs;
     }
 }
 
@@ -112,7 +128,9 @@ impl ops::Div<f32> for Vec3 {
 
 impl ops::DivAssign<f32> for Vec3 {
     fn div_assign(&mut self, rhs: f32) {
-        *self = Vec3::new(self.x / rhs, self.y / rhs, self.z / rhs)
+        self.x /= rhs;
+        self.y /= rhs;
+        self.z /= rhs;
     }
 }
 
@@ -165,6 +183,16 @@ impl Vec3 {
     #[allow(dead_code)]
     pub fn print(a: Vec3, label: &str) {
         println!("{} = [{:.2}, {:.2}, {:.2}]", label, a.x, a.y, a.z);
+    }
+
+    pub fn random_point_in_unit_sphere(rng: &mut StdRng) -> Vec3 {
+        let mut point = Vec3::ONE;
+        while Vec3::length(point) > 1.0 {
+            point.x = (rng.gen::<f32>() * 2.0) - 1.0;
+            point.y = (rng.gen::<f32>() * 2.0) - 1.0;
+            point.z = (rng.gen::<f32>() * 2.0) - 1.0;
+        }
+        point
     }
 }
 
