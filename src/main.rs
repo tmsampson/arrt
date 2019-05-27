@@ -4,6 +4,7 @@ mod raytrace;
 use raytrace::camera::Camera;
 use raytrace::camera::Tracer;
 use raytrace::ray::Ray;
+use raytrace::ray::RayHitResult;
 use raytrace::vector::Vec3;
 
 // -----------------------------------------------------------------------------------------
@@ -50,7 +51,9 @@ fn save_image(image: &bmp::Image, filename: &str) {
 
 // -----------------------------------------------------------------------------------------
 
-fn sample_background(ray: &Ray, colour_bottom: Vec3, colour_top: Vec3) -> Vec3 {
+fn sample_background(ray: &Ray) -> Vec3 {
+    let colour_bottom = Vec3::new(1.0, 1.0, 1.0);
+    let colour_top = Vec3::new(0.5, 0.7, 1.0);
     let t = (ray.direction.y + 1.0) * 0.5;
     Vec3::lerp(colour_bottom, colour_top, t)
 }
@@ -79,10 +82,11 @@ fn draw_scene(image: &mut bmp::Image, image_width: u32, image_height: u32) {
 
     // For each pixel...
     let mut pixel = bmp::Pixel::new(0, 0, 0);
-    for pixel_x in 0..image_width {
-        for pixel_y in 0..image_height {
+    for pixel_y in 0..image_height {
+        let pixel_y_f = pixel_y as f32;
+        println!("Tracing scanline {} / {}", pixel_y + 1, image_height);
+        for pixel_x in 0..image_width {
             let pixel_x_f = pixel_x as f32;
-            let pixel_y_f = pixel_y as f32;
 
             // Sample centroid
             let ray_centroid = tracer.get_ray(pixel_x_f, pixel_y_f);
@@ -109,53 +113,64 @@ fn draw_scene(image: &mut bmp::Image, image_width: u32, image_height: u32) {
 // -----------------------------------------------------------------------------------------
 
 fn sample_scene(ray: &Ray, rng: &mut StdRng) -> Vec3 {
-    // Setup colours
-    let background_colour_bottom = Vec3::new(1.0, 1.0, 1.0);
-    let background_colour_top = Vec3::new(0.5, 0.7, 1.0);
+    let mut result = RayHitResult::MAX_HIT;
 
     // Test against spheres
+    let sphere_result = sample_scene_spheres(ray);
+    if sphere_result.hit {
+        result = sphere_result;
+    }
+
+    // Test against planes
+    let plane_result = sample_scene_planes(ray);
+    if plane_result.hit && (plane_result.distance < result.distance) {
+        result = plane_result;
+    }
+
+    // Use background?
+    if !result.hit {
+        return sample_background(ray);
+    }
+
+    // Debug normals?
+    const DEBUG_NORMALS: bool = false;
+    if DEBUG_NORMALS {
+        return Vec3::new(
+            (result.normal.x + 1.0) * 0.5,
+            (result.normal.y + 1.0) * 0.5,
+            (result.normal.z + 1.0) * 0.5,
+        );
+    }
+
+    // Shade pixel (diffuse)
+    let absorbed = 0.5;
+    let reflected = 1.0 - absorbed;
+    let refelcted_point = result.position + result.normal + Vec3::random_point_in_unit_sphere(rng);
+    let reflected_ray_origin = result.position + (result.normal * 0.00001);
+    let refelcted_ray_direction = Vec3::normalize(refelcted_point - result.position);
+    let reflected_ray = Ray::new(reflected_ray_origin, refelcted_ray_direction);
+    sample_scene(&reflected_ray, rng) * reflected
+}
+
+// -----------------------------------------------------------------------------------------
+
+fn sample_scene_spheres(ray: &Ray) -> RayHitResult {
     let sphere_position = Vec3::new(0.0, 1.0, 0.0);
     let sphere_radius = 1.0;
-    let (hit_sphere, hit_distance, hit_position) =
-        raytrace::intersect::ray_sphere(&ray, sphere_position, sphere_radius);
-    let hit_normal = Vec3::normalize(hit_position - sphere_position);
 
-    // Generate colour from normal
-    let _hit_normal_colour = Vec3::new(
-        (hit_normal.x + 1.0) * 0.5,
-        (hit_normal.y + 1.0) * 0.5,
-        (hit_normal.z + 1.0) * 0.5,
-    );
-
-    // Test against plane?
-    let (hit_test_p, hit_distance_p, hit_position_p) =
-        raytrace::intersect::ray_plane(&ray, Vec3::ZERO, Vec3::UP);
-    if hit_test_p && (!hit_sphere || (hit_distance_p < hit_distance)) {
-        let hit_normal_p = Vec3::UP;
-
-        let absorbed = 0.5;
-        let reflected = 1.0 - absorbed;
-        let point = hit_position_p + hit_normal_p + Vec3::random_point_in_unit_sphere(rng);
-        let reflected_ray = Ray::new(
-            hit_position_p + (hit_normal_p * 0.00001),
-            Vec3::normalize(point - hit_position_p),
-        );
-        return sample_scene(&reflected_ray, rng) * reflected;
-    }
-
-    // Shade pixel
-    if hit_sphere {
-        let absorbed = 0.5;
-        let reflected = 1.0 - absorbed;
-        let point = hit_position + hit_normal + Vec3::random_point_in_unit_sphere(rng);
-        let reflected_ray = Ray::new(
-            hit_position + (hit_normal * 0.00001),
-            Vec3::normalize(point - hit_position),
-        );
-        sample_scene(&reflected_ray, rng) * reflected
+    let mut result = raytrace::intersect::ray_sphere(&ray, sphere_position, sphere_radius);
+    if result.hit {
+        result.normal = Vec3::normalize(result.position - sphere_position);
+        result
     } else {
-        sample_background(&ray, background_colour_bottom, background_colour_top)
+        RayHitResult::NO_HIT
     }
+}
+
+// -----------------------------------------------------------------------------------------
+
+fn sample_scene_planes(ray: &Ray) -> RayHitResult {
+    raytrace::intersect::ray_plane(&ray, Vec3::ZERO, Vec3::UP)
 }
 
 // -----------------------------------------------------------------------------------------
