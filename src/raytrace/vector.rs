@@ -30,6 +30,31 @@ impl Vec3 {
         y: 1.0,
         z: 1.0,
     };
+    pub const RED: Vec3 = Vec3 {
+        x: 1.0,
+        y: 0.0,
+        z: 0.0,
+    };
+    pub const GREEN: Vec3 = Vec3 {
+        x: 0.0,
+        y: 1.0,
+        z: 0.0,
+    };
+    pub const BLUE: Vec3 = Vec3 {
+        x: 0.0,
+        y: 0.0,
+        z: 1.0,
+    };
+    pub const BLACK: Vec3 = Vec3 {
+        x: 0.0,
+        y: 0.0,
+        z: 0.0,
+    };
+    pub const WHITE: Vec3 = Vec3 {
+        x: 1.0,
+        y: 1.0,
+        z: 1.0,
+    };
 }
 
 // -----------------------------------------------------------------------------------------
@@ -171,9 +196,9 @@ impl Vec3 {
     }
 
     pub fn copy_to_pixel(v: Vec3, p: &mut bmp::Pixel) {
-        p.r = (v.x * 255.0) as u8;
-        p.g = (v.y * 255.0) as u8;
-        p.b = (v.z * 255.0) as u8;
+        p.r = (v.x * 255.0).round() as u8;
+        p.g = (v.y * 255.0).round() as u8;
+        p.b = (v.z * 255.0).round() as u8;
     }
 }
 
