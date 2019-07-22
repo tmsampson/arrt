@@ -8,21 +8,30 @@
 			"subcommand": "clean",
 			"problemMatcher": [
 				"$rustc"
-			]
+			],
+			"presentation": {
+				"clear": true
+			}
 		},
 		{
 			"type": "cargo",
 			"subcommand": "check",
 			"problemMatcher": [
 				"$rustc"
-			]
+			],
+			"presentation": {
+				"clear": true
+			}
 		},
 		{
 			"type": "cargo",
 			"subcommand": "build",
 			"problemMatcher": [
 				"$rustc"
-			]
+			],
+			"presentation": {
+				"clear": true
+			}
 		},
 		{
 			"label": "Rust: cargo run",
@@ -34,7 +43,10 @@
 			},
 			"problemMatcher": [
 				"$rustc"
-			]
+			],
+			"presentation": {
+				"clear": true
+			}
 		}
 	]
 }
