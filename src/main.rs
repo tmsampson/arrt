@@ -10,6 +10,7 @@ use raytrace::camera::Tracer;
 use raytrace::geometry::Plane;
 use raytrace::geometry::Sphere;
 use raytrace::misc::StringLiteral;
+use raytrace::quality::QualityPreset;
 use raytrace::ray::Ray;
 use raytrace::ray::RayHitResult;
 use raytrace::vector::Vec3;
@@ -21,14 +22,10 @@ use rand::prelude::*;
 // -----------------------------------------------------------------------------------------
 // Config | Image
 const IMAGE_FILENAME: &str = "output.bmp";
-const IMAGE_WIDTH: u32 = 640;
-const IMAGE_HEIGHT: u32 = 480;
 
 // -----------------------------------------------------------------------------------------
 // Config | Rendering
 const RNG_SEED: u64 = 0;
-const SAMPLES_PER_PIXEL: usize = 1;
-const MAX_BOUNCES: u32 = 20;
 
 // -----------------------------------------------------------------------------------------
 // Config | Camera
@@ -115,6 +112,7 @@ const DEBUG_SHOW_PROGRESS: bool = true;
 fn main() {
     // Start timer
     let timer_begin = time::precise_time_s();
+    let quality = raytrace::quality::get_preset(String::from("lowestz"));
 
     // Setup materials
     let mut materials = MaterialTable::new();
@@ -162,10 +160,10 @@ fn main() {
     );
 
     // Setup image
-    let mut image = bmp::Image::new(IMAGE_WIDTH, IMAGE_HEIGHT);
+    let mut image = bmp::Image::new(quality.image_width, quality.image_height);
 
     // Draw scene
-    draw_scene(&mut image, &materials);
+    draw_scene(&mut image, &quality, &materials);
 
     // Save image
     save_image(&image, IMAGE_FILENAME);
@@ -195,7 +193,7 @@ fn sample_background(ray: &Ray) -> Vec3 {
 
 // -----------------------------------------------------------------------------------------
 
-fn draw_scene(image: &mut bmp::Image, materials: &MaterialTable) {
+fn draw_scene(image: &mut bmp::Image, quality: &QualityPreset, materials: &MaterialTable) {
     // Setup camera
     let image_width = image.get_width();
     let image_height = image.get_height();
@@ -206,10 +204,10 @@ fn draw_scene(image: &mut bmp::Image, materials: &MaterialTable) {
     let mut rng: StdRng = SeedableRng::seed_from_u64(RNG_SEED);
 
     // Generate random sampling offsets
-    const ADDITIONAL_SAMPLES: usize = SAMPLES_PER_PIXEL - 1;
-    let mut sample_offsets_x: [f32; ADDITIONAL_SAMPLES] = [0.0; ADDITIONAL_SAMPLES];
-    let mut sample_offsets_y: [f32; ADDITIONAL_SAMPLES] = [0.0; ADDITIONAL_SAMPLES];
-    for sample_index in 0..ADDITIONAL_SAMPLES {
+    let additional_samples: usize = quality.samples_per_pixel - 1;
+    let mut sample_offsets_x = vec![0.0; additional_samples];
+    let mut sample_offsets_y = vec![0.0; additional_samples];
+    for sample_index in 0..additional_samples {
         sample_offsets_x[sample_index] = rng.gen();
         sample_offsets_y[sample_index] = rng.gen();
     }
@@ -231,19 +229,31 @@ fn draw_scene(image: &mut bmp::Image, materials: &MaterialTable) {
             // Sample centroid
             let mut bounces = 0;
             let ray_centroid = tracer.get_ray(pixel_x_f, pixel_y_f);
-            let mut colour = sample_scene(&ray_centroid, &mut rng, &materials, &mut bounces);
+            let mut colour = sample_scene(
+                &ray_centroid,
+                &mut rng,
+                &materials,
+                &mut bounces,
+                quality.max_bounces,
+            );
 
             // Take additional samples
-            for sample_index in 0..ADDITIONAL_SAMPLES {
+            for sample_index in 0..additional_samples {
                 let mut bounces = 0;
                 let offset_x = (sample_offsets_x[sample_index] - 0.5) * 0.99;
                 let offset_y = (sample_offsets_y[sample_index] - 0.5) * 0.99;
                 let ray = tracer.get_ray(pixel_x_f + offset_x, pixel_y_f + offset_y);
-                colour += sample_scene(&ray, &mut rng, &materials, &mut bounces);
+                colour += sample_scene(
+                    &ray,
+                    &mut rng,
+                    &materials,
+                    &mut bounces,
+                    quality.max_bounces,
+                );
             }
 
             // Average samples and store in pixel
-            colour /= SAMPLES_PER_PIXEL as f32;
+            colour /= quality.samples_per_pixel as f32;
             Vec3::copy_to_pixel(colour, &mut pixel);
 
             // Write pixel
@@ -254,7 +264,13 @@ fn draw_scene(image: &mut bmp::Image, materials: &MaterialTable) {
 
 // -----------------------------------------------------------------------------------------
 
-fn sample_scene(ray: &Ray, rng: &mut StdRng, materials: &MaterialTable, bounces: &mut u32) -> Vec3 {
+fn sample_scene(
+    ray: &Ray,
+    rng: &mut StdRng,
+    materials: &MaterialTable,
+    bounces: &mut u32,
+    max_bounces: u32,
+) -> Vec3 {
     let mut result = RayHitResult::MAX_HIT;
 
     // Manage bounces
@@ -307,8 +323,10 @@ fn sample_scene(ray: &Ray, rng: &mut StdRng, materials: &MaterialTable, bounces:
     let reflected_ray_origin = result.position + (result.normal * 0.00001);
     let refelcted_ray_direction = Vec3::normalize(refelcted_point - result.position);
     let reflected_ray = Ray::new(reflected_ray_origin, refelcted_ray_direction);
-    if *bounces < MAX_BOUNCES {
-        sample_scene(&reflected_ray, rng, materials, bounces) * material.diffuse * reflected
+    if *bounces < max_bounces {
+        sample_scene(&reflected_ray, rng, materials, bounces, max_bounces)
+            * material.diffuse
+            * reflected
     } else {
         material.diffuse * reflected
     }

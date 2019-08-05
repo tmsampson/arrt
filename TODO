@@ -1,5 +1,5 @@
 Todo:
-  ☐ Implement high-resolution timer + print key stats
+  ✔ Implement high-resolution timer + print key stats @done(19-08-05 19:18)
   ☐ Implement quality profiles
   ☐ Implement per pixel debugging (bounces, timer, material, hit info etc)
   ☐ Implement bounce heatmap

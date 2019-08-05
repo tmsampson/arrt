@@ -1,0 +1,16 @@
+[
+	{
+		"name": "lowest",
+		"image_width": 640,
+		"image_height": 480,
+		"samples_per_pixel": 4,
+		"max_bounces": 4
+	},
+	{
+		"name": "low",
+		"image_width": 640,
+		"image_height": 480,
+		"samples_per_pixel": 16,
+		"max_bounces": 10
+	}
+]
