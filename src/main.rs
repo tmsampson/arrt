@@ -1,16 +1,18 @@
 // -----------------------------------------------------------------------------------------
 
+use std::collections::HashMap;
+
+// -----------------------------------------------------------------------------------------
+
 mod raytrace;
 use raytrace::camera::Camera;
 use raytrace::camera::Tracer;
 use raytrace::geometry::Plane;
 use raytrace::geometry::Sphere;
+use raytrace::misc::StringLiteral;
 use raytrace::ray::Ray;
 use raytrace::ray::RayHitResult;
 use raytrace::vector::Vec3;
-use raytrace::StringLiteral;
-
-use std::collections::HashMap;
 
 // -----------------------------------------------------------------------------------------
 
@@ -91,13 +93,13 @@ const SCENE_SPHERES: [Sphere; 3] = [
 
 pub struct Material {
     pub diffuse: Vec3,
-    pub absorbtion: f32
+    pub absorbtion: f32,
 }
 
 impl Material {
-pub const NONE: Material = Material {
+    pub const NONE: Material = Material {
         diffuse: Vec3::WHITE,
-        absorbtion: 1.0
+        absorbtion: 1.0,
     };
 }
 
@@ -113,39 +115,46 @@ const DEBUG_SHOW_PROGRESS: bool = true;
 fn main() {
     // Setup materials
     let mut materials = MaterialTable::new();
-    materials.insert("red", Material { diffuse: Vec3::RED, absorbtion: 0.3 });
+    materials.insert(
+        "red",
+        Material {
+            diffuse: Vec3::RED,
+            absorbtion: 0.3,
+        },
+    );
     materials.insert(
         "green",
         Material {
             diffuse: Vec3::GREEN,
-            absorbtion: 0.3
+            absorbtion: 0.3,
         },
     );
     materials.insert(
         "blue",
         Material {
             diffuse: Vec3::BLUE,
-            absorbtion: 0.3
+            absorbtion: 0.3,
         },
     );
     materials.insert(
         "white",
         Material {
             diffuse: Vec3::WHITE,
-            absorbtion: 0.3
+            absorbtion: 0.3,
         },
     );
     materials.insert(
         "black",
         Material {
             diffuse: Vec3::BLACK,
-            absorbtion: 0.3
-    });
+            absorbtion: 0.3,
+        },
+    );
     materials.insert(
         "mirror",
         Material {
             diffuse: Vec3::WHITE,
-            absorbtion: 0.0
+            absorbtion: 0.0,
         },
     );
 
@@ -268,18 +277,18 @@ fn sample_scene(ray: &Ray, rng: &mut StdRng, materials: &MaterialTable, bounces:
     // Grab material
     let material = match materials.get(result.material) {
         Some(material) => material,
-        None => { println!("Failed to find material: {}", result.material); &Material::NONE },
+        None => {
+            println!("Failed to find material: {}", result.material);
+            &Material::NONE
+        }
     };
 
     // Shade pixel (diffuse)
     let absorbed = 0.3;
     let reflected = 1.0 - absorbed;
-    let refelcted_point = if result.material == "mirror"
-    {
+    let refelcted_point = if result.material == "mirror" {
         result.position + Vec3::reflect(ray.direction, result.normal)
-    }
-    else
-    {
+    } else {
         result.position + result.normal + (Vec3::random_point_in_unit_sphere(rng) * 0.99)
     };
 
