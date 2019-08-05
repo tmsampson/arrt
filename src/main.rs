@@ -27,7 +27,7 @@ const IMAGE_HEIGHT: u32 = 480;
 // -----------------------------------------------------------------------------------------
 // Config | Rendering
 const RNG_SEED: u64 = 0;
-const SAMPLES_PER_PIXEL: usize = 64;
+const SAMPLES_PER_PIXEL: usize = 1;
 const MAX_BOUNCES: u32 = 20;
 
 // -----------------------------------------------------------------------------------------
@@ -113,6 +113,9 @@ const DEBUG_SHOW_PROGRESS: bool = true;
 // -----------------------------------------------------------------------------------------
 
 fn main() {
+    // Start timer
+    let timer_begin = time::precise_time_s();
+
     // Setup materials
     let mut materials = MaterialTable::new();
     materials.insert(
@@ -166,6 +169,15 @@ fn main() {
 
     // Save image
     save_image(&image, IMAGE_FILENAME);
+
+    // Stop timer and report
+    let timer_end = time::precise_time_s();
+    println!("====================================================");
+    println!(" SUMMARY");
+    println!("====================================================");
+    println!("    Output: {}", IMAGE_FILENAME);
+    println!("Total time: {:.2} seconds", (timer_end - timer_begin));
+    println!("====================================================");
 }
 
 // -----------------------------------------------------------------------------------------
