@@ -200,6 +200,16 @@ impl Vec3 {
         p.g = (v.y * 255.0).round() as u8;
         p.b = (v.z * 255.0).round() as u8;
     }
+
+    pub fn reflect(incident: Vec3, normal: Vec3) -> Vec3
+    {
+        incident - (normal * 2.0 * Vec3::dot(normal, incident))
+    }
+
+    // pub fn refract(incident: Vec3, normal: Vec3, index : f32) -> Vec3
+    // {
+    
+    // }
 }
 
 // -----------------------------------------------------------------------------------------

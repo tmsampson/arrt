@@ -1,6 +1,7 @@
 // -----------------------------------------------------------------------------------------
 
 use super::vector::Vec3;
+use super::StringLiteral;
 
 // -----------------------------------------------------------------------------------------
 // Ray Type
@@ -33,7 +34,7 @@ pub struct RayHitResult {
     pub distance: f32,
     pub position: Vec3,
     pub normal: Vec3,
-    pub diffuse: Vec3,
+    pub material: StringLiteral,
 }
 
 // -----------------------------------------------------------------------------------------
@@ -44,14 +45,14 @@ impl RayHitResult {
         distance: f32,
         position: Vec3,
         normal: Vec3,
-        diffuse: Vec3,
+        material: StringLiteral,
     ) -> RayHitResult {
         RayHitResult {
             hit,
             distance,
             position,
             normal,
-            diffuse,
+            material,
         }
     }
 }
@@ -64,7 +65,7 @@ impl RayHitResult {
         distance: 0.0,
         position: Vec3::ZERO,
         normal: Vec3::UP,
-        diffuse: Vec3::ZERO,
+        material: "debug",
     };
 
     pub const MAX_HIT: RayHitResult = RayHitResult {
@@ -72,7 +73,7 @@ impl RayHitResult {
         distance: std::f32::MAX,
         position: Vec3::ZERO,
         normal: Vec3::UP,
-        diffuse: Vec3::ZERO,
+        material: "debug",
     };
 }
 

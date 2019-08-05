@@ -7,20 +7,25 @@ Todo:
   ☐ Add "random" helpers
   ☐ Add winit window
   ☐ Add build task to set as wallpaper
-  ☐ Load scene from file
+  ☐ Load scene from file https://serde.rs/
   ☐ Different primitives
     ☐ Cube
     ☐ Shapes
     ☐ Signed distance fields
   ☐ Scene spatial partitioning
   ☐ Materials
+    ☐ Emissive (glowy)
     ☐ Volume texturing
     ☐ Implement ice/refraction
     ☐ Mirror
     ☐ Marble
     ☐ Granite
-  ☐ Multi-threading
+  ☐ Optimisations
+    ☐ Multi-threading
+    ☐ Pre-bake per-pixel sampling offsets
+    ☐ Pre-bake random unit sphere sample points
   ☐ Post processing
+    ☐ Fog
     ☐ Chromatic abberation
     ☐ Vignette
     ☐ Per-pixel motion blur

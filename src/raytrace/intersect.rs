@@ -15,11 +15,11 @@ pub fn ray_plane(ray: &Ray, plane: &Plane) -> RayHitResult {
         let plane_to_ray = plane.position - ray.origin;
         let t = Vec3::dot(plane_to_ray, plane.normal) / denom;
         let hit_pos = ray.get_point(t);
-        let row = (hit_pos.z * 0.25).round().abs() % 2.0;
-        let col = (hit_pos.x * 0.25).round().abs() % 2.0;
-        let pick = (row + col) % 2.0;
-        let diffuse = Vec3::lerp(plane.diffuse, plane.diffuse * 0.5, pick);
-        RayHitResult::new(t > TOLLERANCE, t, hit_pos, plane.normal, diffuse)
+        //let row = (hit_pos.z * 0.25).round().abs() % 2.0;
+        //let col = (hit_pos.x * 0.25).round().abs() % 2.0;
+        //let pick = (row + col) % 2.0;
+        //let diffuse = plane.diffuse; // Vec3::lerp(plane.diffuse, plane.diffuse * 0.5, pick);
+        RayHitResult::new(t > TOLLERANCE, t, hit_pos, plane.normal, "mirror")
     } else {
         RayHitResult::NO_HIT
     }
@@ -59,7 +59,7 @@ pub fn ray_sphere(ray: &Ray, sphere: &Sphere) -> RayHitResult {
         hit_distance,
         hit_position,
         Vec3::UP,
-        sphere.diffuse,
+        sphere.material,
     )
 }
 

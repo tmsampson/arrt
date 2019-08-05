@@ -1,21 +1,22 @@
 // -----------------------------------------------------------------------------------------
 
 use super::vector::Vec3;
+use super::StringLiteral;
 
 // -----------------------------------------------------------------------------------------
 // Sphere Type
 pub struct Sphere {
-	pub centre: Vec3,
-	pub radius: f32,
-	pub diffuse: Vec3,
+    pub centre: Vec3,
+    pub radius: f32,
+    pub material: StringLiteral,
 }
 
 // -----------------------------------------------------------------------------------------
 // Plane Type
 pub struct Plane {
-	pub position: Vec3,
-	pub normal: Vec3,
-	pub diffuse: Vec3,
+    pub position: Vec3,
+    pub normal: Vec3,
+    pub diffuse: Vec3,
 }
 
 // -----------------------------------------------------------------------------------------

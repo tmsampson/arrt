@@ -8,6 +8,9 @@ use raytrace::geometry::Sphere;
 use raytrace::ray::Ray;
 use raytrace::ray::RayHitResult;
 use raytrace::vector::Vec3;
+use raytrace::StringLiteral;
+
+use std::collections::HashMap;
 
 // -----------------------------------------------------------------------------------------
 
@@ -16,22 +19,22 @@ use rand::prelude::*;
 // -----------------------------------------------------------------------------------------
 // Config | Image
 const IMAGE_FILENAME: &str = "output.bmp";
-const IMAGE_WIDTH: u32 = 640; //1440;
-const IMAGE_HEIGHT: u32 = 480; // 810;
+const IMAGE_WIDTH: u32 = 640;
+const IMAGE_HEIGHT: u32 = 480;
 
 // -----------------------------------------------------------------------------------------
 // Config | Rendering
 const RNG_SEED: u64 = 0;
-const SAMPLES_PER_PIXEL: usize = 32;
-const MAX_BOUNCES: u32 = 32;
+const SAMPLES_PER_PIXEL: usize = 64;
+const MAX_BOUNCES: u32 = 20;
 
 // -----------------------------------------------------------------------------------------
 // Config | Camera
 const CAMERA_FOV: f32 = 90.0;
 const CAMERA_POSITION: Vec3 = Vec3 {
     x: 0.0,
-    y: 12.0,
-    z: -7.0,
+    y: 10.0,
+    z: -20.0,
 };
 const CAMERA_LOOKAT: Vec3 = Vec3 {
     x: 0.0,
@@ -62,11 +65,7 @@ const SCENE_SPHERES: [Sphere; 3] = [
             z: 0.0,
         },
         radius: 3.0,
-        diffuse: Vec3 {
-            x: 1.0,
-            y: 0.0,
-            z: 0.0,
-        },
+        material: "red",
     },
     Sphere {
         centre: Vec3 {
@@ -75,11 +74,7 @@ const SCENE_SPHERES: [Sphere; 3] = [
             z: 0.0,
         },
         radius: 3.0,
-        diffuse: Vec3 {
-            x: 0.0,
-            y: 1.0,
-            z: 0.0,
-        },
+        material: "mirror",
     },
     Sphere {
         centre: Vec3 {
@@ -88,13 +83,25 @@ const SCENE_SPHERES: [Sphere; 3] = [
             z: 0.0,
         },
         radius: 3.0,
-        diffuse: Vec3 {
-            x: 0.0,
-            y: 0.0,
-            z: 1.0,
-        },
+        material: "blue",
     },
 ];
+
+// -----------------------------------------------------------------------------------------
+
+pub struct Material {
+    pub diffuse: Vec3,
+    pub absorbtion: f32
+}
+
+impl Material {
+pub const NONE: Material = Material {
+        diffuse: Vec3::WHITE,
+        absorbtion: 1.0
+    };
+}
+
+type MaterialTable = HashMap<StringLiteral, Material>;
 
 // -----------------------------------------------------------------------------------------
 // Config | Debug
@@ -104,11 +111,49 @@ const DEBUG_SHOW_PROGRESS: bool = true;
 // -----------------------------------------------------------------------------------------
 
 fn main() {
+    // Setup materials
+    let mut materials = MaterialTable::new();
+    materials.insert("red", Material { diffuse: Vec3::RED, absorbtion: 0.3 });
+    materials.insert(
+        "green",
+        Material {
+            diffuse: Vec3::GREEN,
+            absorbtion: 0.3
+        },
+    );
+    materials.insert(
+        "blue",
+        Material {
+            diffuse: Vec3::BLUE,
+            absorbtion: 0.3
+        },
+    );
+    materials.insert(
+        "white",
+        Material {
+            diffuse: Vec3::WHITE,
+            absorbtion: 0.3
+        },
+    );
+    materials.insert(
+        "black",
+        Material {
+            diffuse: Vec3::BLACK,
+            absorbtion: 0.3
+    });
+    materials.insert(
+        "mirror",
+        Material {
+            diffuse: Vec3::WHITE,
+            absorbtion: 0.0
+        },
+    );
+
     // Setup image
     let mut image = bmp::Image::new(IMAGE_WIDTH, IMAGE_HEIGHT);
 
     // Draw scene
-    draw_scene(&mut image);
+    draw_scene(&mut image, &materials);
 
     // Save image
     save_image(&image, IMAGE_FILENAME);
@@ -129,7 +174,7 @@ fn sample_background(ray: &Ray) -> Vec3 {
 
 // -----------------------------------------------------------------------------------------
 
-fn draw_scene(image: &mut bmp::Image) {
+fn draw_scene(image: &mut bmp::Image, materials: &MaterialTable) {
     // Setup camera
     let image_width = image.get_width();
     let image_height = image.get_height();
@@ -165,7 +210,7 @@ fn draw_scene(image: &mut bmp::Image) {
             // Sample centroid
             let mut bounces = 0;
             let ray_centroid = tracer.get_ray(pixel_x_f, pixel_y_f);
-            let mut colour = sample_scene(&ray_centroid, &mut rng, &mut bounces);
+            let mut colour = sample_scene(&ray_centroid, &mut rng, &materials, &mut bounces);
 
             // Take additional samples
             for sample_index in 0..ADDITIONAL_SAMPLES {
@@ -173,7 +218,7 @@ fn draw_scene(image: &mut bmp::Image) {
                 let offset_x = (sample_offsets_x[sample_index] - 0.5) * 0.99;
                 let offset_y = (sample_offsets_y[sample_index] - 0.5) * 0.99;
                 let ray = tracer.get_ray(pixel_x_f + offset_x, pixel_y_f + offset_y);
-                colour += sample_scene(&ray, &mut rng, &mut bounces);
+                colour += sample_scene(&ray, &mut rng, &materials, &mut bounces);
             }
 
             // Average samples and store in pixel
@@ -188,7 +233,7 @@ fn draw_scene(image: &mut bmp::Image) {
 
 // -----------------------------------------------------------------------------------------
 
-fn sample_scene(ray: &Ray, rng: &mut StdRng, bounces: &mut u32) -> Vec3 {
+fn sample_scene(ray: &Ray, rng: &mut StdRng, materials: &MaterialTable, bounces: &mut u32) -> Vec3 {
     let mut result = RayHitResult::MAX_HIT;
 
     // Manage bounces
@@ -220,17 +265,31 @@ fn sample_scene(ray: &Ray, rng: &mut StdRng, bounces: &mut u32) -> Vec3 {
         );
     }
 
+    // Grab material
+    let material = match materials.get(result.material) {
+        Some(material) => material,
+        None => { println!("Failed to find material: {}", result.material); &Material::NONE },
+    };
+
     // Shade pixel (diffuse)
     let absorbed = 0.3;
     let reflected = 1.0 - absorbed;
-    let refelcted_point = result.position + result.normal + Vec3::random_point_in_unit_sphere(rng);
+    let refelcted_point = if result.material == "mirror"
+    {
+        result.position + Vec3::reflect(ray.direction, result.normal)
+    }
+    else
+    {
+        result.position + result.normal + (Vec3::random_point_in_unit_sphere(rng) * 0.99)
+    };
+
     let reflected_ray_origin = result.position + (result.normal * 0.00001);
     let refelcted_ray_direction = Vec3::normalize(refelcted_point - result.position);
     let reflected_ray = Ray::new(reflected_ray_origin, refelcted_ray_direction);
     if *bounces < MAX_BOUNCES {
-        sample_scene(&reflected_ray, rng, bounces) * result.diffuse * reflected
+        sample_scene(&reflected_ray, rng, materials, bounces) * material.diffuse * reflected
     } else {
-        result.diffuse * reflected
+        material.diffuse * reflected
     }
 }
 
