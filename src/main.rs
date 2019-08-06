@@ -1,8 +1,8 @@
 // -----------------------------------------------------------------------------------------
 
-use std::collections::HashMap;
+use clap::{App, Arg};
 use rand::prelude::*;
-use clap::{Arg, App};
+use std::collections::HashMap;
 
 // -----------------------------------------------------------------------------------------
 
@@ -102,25 +102,28 @@ type MaterialTable = HashMap<StringLiteral, Material>;
 
 // -----------------------------------------------------------------------------------------
 // Config | Debug
-const DEBUG_SHOW_PROGRESS: bool = true;
+const PROGRESS_UPDATE_INTERVAL: f64 = 1.0;
 
 // -----------------------------------------------------------------------------------------
 
-fn parse_command_line()-> clap::ArgMatches<'static>
-{
+fn parse_command_line() -> clap::ArgMatches<'static> {
     App::new("Ray Tracer")
         .version("0.0.0")
         .author("Thomas Sampson <tmsampson@gmail.com>")
-        .arg(Arg::with_name("quality")
+        .arg(
+            Arg::with_name("quality")
                 .short("q")
                 .long("quality")
                 .takes_value(true)
-                .help("Quality preset"))
-        .arg(Arg::with_name("debug-normals")
+                .help("Quality preset"),
+        )
+        .arg(
+            Arg::with_name("debug-normals")
                 .short("normals")
                 .long("debug-normals")
                 .takes_value(false)
-                .help("Debug render normals"))
+                .help("Debug render normals"),
+        )
         .get_matches()
 }
 
@@ -192,6 +195,7 @@ fn main() {
 
     // Stop timer and report
     let timer_end = time::precise_time_s();
+    println!("");
     println!("====================================================");
     println!(" SUMMARY");
     println!("====================================================");
@@ -216,7 +220,12 @@ fn sample_background(ray: &Ray) -> Vec3 {
 
 // -----------------------------------------------------------------------------------------
 
-fn draw_scene(image: &mut bmp::Image, quality: &QualityPreset, materials: &MaterialTable, debug_normals: bool) {
+fn draw_scene(
+    image: &mut bmp::Image,
+    quality: &QualityPreset,
+    materials: &MaterialTable,
+    debug_normals: bool,
+) {
     // Setup camera
     let image_width = image.get_width();
     let image_height = image.get_height();
@@ -235,14 +244,25 @@ fn draw_scene(image: &mut bmp::Image, quality: &QualityPreset, materials: &Mater
         sample_offsets_y[sample_index] = rng.gen();
     }
 
+    // Setup regular progress updates
+    let mut last_progress_update = time::precise_time_s();
+
     // For each scanline...
     let mut pixel = bmp::Pixel::new(0, 0, 0);
     for pixel_y in 0..image_height {
         let pixel_y_f = pixel_y as f32;
 
         // Show progress?
-        if DEBUG_SHOW_PROGRESS {
-            println!("Tracing scanline {} / {}", pixel_y + 1, image_height);
+        let now = time::precise_time_s();
+        let elapsed = now - last_progress_update;
+        if elapsed >= PROGRESS_UPDATE_INTERVAL {
+            let row = pixel_y + 1;
+            let percent = ((row as f32) / (image_height as f32)) * 100.0;
+            println!(
+                "Tracing: {:.2}% complete scanline {} / {}",
+                percent, row, image_height
+            );
+            last_progress_update = now;
         }
 
         // For each column
@@ -258,7 +278,7 @@ fn draw_scene(image: &mut bmp::Image, quality: &QualityPreset, materials: &Mater
                 &materials,
                 &mut bounces,
                 quality.max_bounces,
-                debug_normals
+                debug_normals,
             );
 
             // Take additional samples
@@ -273,7 +293,7 @@ fn draw_scene(image: &mut bmp::Image, quality: &QualityPreset, materials: &Mater
                     &materials,
                     &mut bounces,
                     quality.max_bounces,
-                    debug_normals
+                    debug_normals,
                 );
             }
 
@@ -295,7 +315,7 @@ fn sample_scene(
     materials: &MaterialTable,
     bounces: &mut u32,
     max_bounces: u32,
-    debug_normals: bool
+    debug_normals: bool,
 ) -> Vec3 {
     let mut result = RayHitResult::MAX_HIT;
 
@@ -350,8 +370,14 @@ fn sample_scene(
     let refelcted_ray_direction = Vec3::normalize(refelcted_point - result.position);
     let reflected_ray = Ray::new(reflected_ray_origin, refelcted_ray_direction);
     if *bounces < max_bounces {
-        sample_scene(&reflected_ray, rng, materials, bounces, max_bounces, debug_normals)
-            * material.diffuse
+        sample_scene(
+            &reflected_ray,
+            rng,
+            materials,
+            bounces,
+            max_bounces,
+            debug_normals,
+        ) * material.diffuse
             * reflected
     } else {
         material.diffuse * reflected
