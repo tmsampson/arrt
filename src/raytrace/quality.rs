@@ -1,6 +1,7 @@
 // -----------------------------------------------------------------------------------------
 
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::fs;
 
 // -----------------------------------------------------------------------------------------
@@ -11,12 +12,17 @@ const QUALITY_PRESETS_FILE: super::misc::StringLiteral = "quality_presets.json";
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct QualityPreset {
+    #[serde(default)]
     pub name: String,
     pub image_width: u32,
     pub image_height: u32,
     pub samples_per_pixel: usize,
     pub max_bounces: u32,
 }
+
+// -----------------------------------------------------------------------------------------
+
+type QualityPresetTable = HashMap<String, QualityPreset>;
 
 // -----------------------------------------------------------------------------------------
 
@@ -32,7 +38,7 @@ fn get_default_preset() -> QualityPreset {
 
 // -----------------------------------------------------------------------------------------
 
-pub fn get_preset(name: String) -> QualityPreset {
+pub fn get_preset(name: &str) -> QualityPreset {
     // Load presets file
     let data = fs::read_to_string(QUALITY_PRESETS_FILE).expect(&format!(
         "ERROR: Could not load quality presets file: '{}'",
@@ -40,20 +46,23 @@ pub fn get_preset(name: String) -> QualityPreset {
     ));
 
     // Parse presets file
-    let presets: Vec<QualityPreset> = serde_json::from_str(&data).unwrap();
+    let presets: QualityPresetTable = serde_json::from_str(&data).unwrap();
 
     // Find preset by name (or return default)
-    let result = presets.iter().find(|&p| p.name == name);
-    match result {
-        Some(preset) => return preset.clone(),
+    match presets.get(name) {
+        Some(preset) => {
+            let mut result = preset.clone();
+            result.name = String::from(name); // Use map key as name
+            result
+        }
         None => {
             println!(
                 "WARNING: Failed to find quality preset: '{}', using 'default' instead",
                 name
             );
-            return get_default_preset();
+            get_default_preset()
         }
-    };
+    }
 }
 
 // -----------------------------------------------------------------------------------------

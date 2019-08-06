@@ -133,7 +133,7 @@ struct Job<'a> {
     image: &'a mut bmp::Image,
     quality: QualityPreset,
     rng: &'a mut StdRng,
-    debug_normals: bool
+    debug_normals: bool,
 }
 
 // -----------------------------------------------------------------------------------------
@@ -147,7 +147,7 @@ fn main() {
 
     // Load quality presets
     let quality_preset = args.value_of("quality").unwrap_or("default");
-    let quality = raytrace::quality::get_preset(quality_preset.to_string());
+    let quality = raytrace::quality::get_preset(quality_preset);
 
     // Setup materials
     let mut materials = MaterialTable::new();
@@ -198,7 +198,7 @@ fn main() {
         image: &mut bmp::Image::new(quality.image_width, quality.image_height),
         quality,
         rng: &mut SeedableRng::seed_from_u64(RNG_SEED),
-        debug_normals: args.is_present("debug-normals")
+        debug_normals: args.is_present("debug-normals"),
     };
 
     // Draw scene
@@ -283,7 +283,7 @@ fn draw_scene(job: &mut Job, materials: &MaterialTable) {
                 job,
                 &materials,
                 &mut bounces,
-                job.quality.max_bounces
+                job.quality.max_bounces,
             );
 
             // Take additional samples
@@ -292,13 +292,8 @@ fn draw_scene(job: &mut Job, materials: &MaterialTable) {
                 let offset_x = (sample_offsets_x[sample_index] - 0.5) * 0.99;
                 let offset_y = (sample_offsets_y[sample_index] - 0.5) * 0.99;
                 let ray = tracer.get_ray(pixel_x_f + offset_x, pixel_y_f + offset_y);
-                colour += sample_scene(
-                    &ray,
-                    job,
-                    &materials,
-                    &mut bounces,
-                    job.quality.max_bounces
-                );
+                colour +=
+                    sample_scene(&ray, job, &materials, &mut bounces, job.quality.max_bounces);
             }
 
             // Average samples and store in pixel
@@ -319,7 +314,7 @@ fn sample_scene(
     job: &mut Job,
     materials: &MaterialTable,
     bounces: &mut u32,
-    max_bounces: u32
+    max_bounces: u32,
 ) -> Vec3 {
     let mut result = RayHitResult::MAX_HIT;
 
@@ -374,13 +369,8 @@ fn sample_scene(
     let refelcted_ray_direction = Vec3::normalize(refelcted_point - result.position);
     let reflected_ray = Ray::new(reflected_ray_origin, refelcted_ray_direction);
     if *bounces < max_bounces {
-        sample_scene(
-            &reflected_ray,
-            job,
-            materials,
-            bounces,
-            max_bounces
-        ) * material.diffuse
+        sample_scene(&reflected_ray, job, materials, bounces, max_bounces)
+            * material.diffuse
             * reflected
     } else {
         material.diffuse * reflected
