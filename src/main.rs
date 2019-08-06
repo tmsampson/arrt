@@ -98,7 +98,7 @@ type MaterialTable = HashMap<StringLiteral, Material>;
 
 // -----------------------------------------------------------------------------------------
 
-fn parse_command_line() -> clap::ArgMatches<'static> {
+fn parse_command_line<'a>() -> clap::ArgMatches<'a> {
     App::new("Ray Tracer")
         .version("0.0.0")
         .author("Thomas Sampson <tmsampson@gmail.com>")
