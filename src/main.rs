@@ -132,6 +132,7 @@ fn parse_command_line() -> clap::ArgMatches<'static> {
 struct Job<'a> {
     image: &'a mut bmp::Image,
     quality: QualityPreset,
+    rng: &'a mut StdRng
 }
 
 // -----------------------------------------------------------------------------------------
@@ -191,9 +192,12 @@ fn main() {
         },
     );
 
+    let mut rng: StdRng = SeedableRng::seed_from_u64(RNG_SEED);
+
     let mut job = Job {
         image: &mut bmp::Image::new(quality.image_width, quality.image_height),
         quality,
+        rng: &mut rng
     };
 
     // Draw scene
@@ -236,16 +240,13 @@ fn draw_scene(job: &mut Job, materials: &MaterialTable, debug_normals: bool) {
     let camera = Camera::new(CAMERA_POSITION, CAMERA_LOOKAT, CAMERA_FOV);
     let tracer = Tracer::new(&camera, image_width, image_height);
 
-    // Setup RNG
-    let mut rng: StdRng = SeedableRng::seed_from_u64(RNG_SEED);
-
     // Generate random sampling offsets
     let additional_samples: usize = job.quality.samples_per_pixel - 1;
     let mut sample_offsets_x = vec![0.0; additional_samples];
     let mut sample_offsets_y = vec![0.0; additional_samples];
     for sample_index in 0..additional_samples {
-        sample_offsets_x[sample_index] = rng.gen();
-        sample_offsets_y[sample_index] = rng.gen();
+        sample_offsets_x[sample_index] = job.rng.gen();
+        sample_offsets_y[sample_index] = job.rng.gen();
     }
 
     // Setup regular progress updates
@@ -278,7 +279,7 @@ fn draw_scene(job: &mut Job, materials: &MaterialTable, debug_normals: bool) {
             let ray_centroid = tracer.get_ray(pixel_x_f, pixel_y_f);
             let mut colour = sample_scene(
                 &ray_centroid,
-                &mut rng,
+                job,
                 &materials,
                 &mut bounces,
                 job.quality.max_bounces,
@@ -293,7 +294,7 @@ fn draw_scene(job: &mut Job, materials: &MaterialTable, debug_normals: bool) {
                 let ray = tracer.get_ray(pixel_x_f + offset_x, pixel_y_f + offset_y);
                 colour += sample_scene(
                     &ray,
-                    &mut rng,
+                    job,
                     &materials,
                     &mut bounces,
                     job.quality.max_bounces,
@@ -316,7 +317,7 @@ fn draw_scene(job: &mut Job, materials: &MaterialTable, debug_normals: bool) {
 
 fn sample_scene(
     ray: &Ray,
-    rng: &mut StdRng,
+    job: &mut Job,
     materials: &MaterialTable,
     bounces: &mut u32,
     max_bounces: u32,
@@ -368,7 +369,7 @@ fn sample_scene(
     let refelcted_point = if result.material == "mirror" {
         result.position + Vec3::reflect(ray.direction, result.normal)
     } else {
-        result.position + result.normal + (Vec3::random_point_in_unit_sphere(rng) * 0.99)
+        result.position + result.normal + (Vec3::random_point_in_unit_sphere(job.rng) * 0.99)
     };
 
     let reflected_ray_origin = result.position + (result.normal * 0.00001);
@@ -377,7 +378,7 @@ fn sample_scene(
     if *bounces < max_bounces {
         sample_scene(
             &reflected_ray,
-            rng,
+            job,
             materials,
             bounces,
             max_bounces,
