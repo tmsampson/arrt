@@ -1,16 +1,37 @@
 [
 	{
 		"name": "lowest",
-		"image_width": 640,
-		"image_height": 480,
-		"samples_per_pixel": 4,
+		"image_width": 320,
+		"image_height": 240,
+		"samples_per_pixel": 1,
 		"max_bounces": 4
 	},
 	{
 		"name": "low",
 		"image_width": 640,
 		"image_height": 480,
+		"samples_per_pixel": 8,
+		"max_bounces": 8
+	},
+	{
+		"name": "medium",
+		"image_width": 1280,
+		"image_height": 960,
 		"samples_per_pixel": 16,
-		"max_bounces": 10
+		"max_bounces": 16
+	},
+	{
+		"name": "high",
+		"image_width": 1920,
+		"image_height": 1080,
+		"samples_per_pixel": 32,
+		"max_bounces": 32
+	},
+	{
+		"name": "highest",
+		"image_width": 3840,
+		"image_height": 2160,
+		"samples_per_pixel": 64,
+		"max_bounces": 64
 	}
 ]

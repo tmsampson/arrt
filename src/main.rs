@@ -1,6 +1,8 @@
 // -----------------------------------------------------------------------------------------
 
 use std::collections::HashMap;
+use rand::prelude::*;
+use clap::{Arg, App};
 
 // -----------------------------------------------------------------------------------------
 
@@ -14,10 +16,6 @@ use raytrace::quality::QualityPreset;
 use raytrace::ray::Ray;
 use raytrace::ray::RayHitResult;
 use raytrace::vector::Vec3;
-
-// -----------------------------------------------------------------------------------------
-
-use rand::prelude::*;
 
 // -----------------------------------------------------------------------------------------
 // Config | Image
@@ -104,15 +102,40 @@ type MaterialTable = HashMap<StringLiteral, Material>;
 
 // -----------------------------------------------------------------------------------------
 // Config | Debug
-const DEBUG_NORMALS: bool = false;
 const DEBUG_SHOW_PROGRESS: bool = true;
 
 // -----------------------------------------------------------------------------------------
 
+fn parse_command_line()-> clap::ArgMatches<'static>
+{
+    App::new("Ray Tracer")
+        .version("0.0.0")
+        .author("Thomas Sampson <tmsampson@gmail.com>")
+        .arg(Arg::with_name("quality")
+                .short("q")
+                .long("quality")
+                .takes_value(true)
+                .help("Quality preset"))
+        .arg(Arg::with_name("debug-normals")
+                .short("normals")
+                .long("debug-normals")
+                .takes_value(false)
+                .help("Debug render normals"))
+        .get_matches()
+}
+
+// -----------------------------------------------------------------------------------------
+
 fn main() {
+
     // Start timer
     let timer_begin = time::precise_time_s();
-    let quality = raytrace::quality::get_preset(String::from("lowestz"));
+
+    // Parse command line args
+    let args = parse_command_line();
+    let quality_preset = args.value_of("quality").unwrap_or("default");
+    let quality = raytrace::quality::get_preset(quality_preset.to_string());
+    let debug_normals = args.is_present("debug-normals");
 
     // Setup materials
     let mut materials = MaterialTable::new();
@@ -163,7 +186,7 @@ fn main() {
     let mut image = bmp::Image::new(quality.image_width, quality.image_height);
 
     // Draw scene
-    draw_scene(&mut image, &quality, &materials);
+    draw_scene(&mut image, &quality, &materials, debug_normals);
 
     // Save image
     save_image(&image, IMAGE_FILENAME);
@@ -173,8 +196,9 @@ fn main() {
     println!("====================================================");
     println!(" SUMMARY");
     println!("====================================================");
-    println!("    Output: {}", IMAGE_FILENAME);
-    println!("Total time: {:.2} seconds", (timer_end - timer_begin));
+    println!("     Output: {}", IMAGE_FILENAME);
+    println!("    Quality: {}", quality_preset);
+    println!(" Total time: {:.2} seconds", (timer_end - timer_begin));
     println!("====================================================");
 }
 
@@ -193,7 +217,7 @@ fn sample_background(ray: &Ray) -> Vec3 {
 
 // -----------------------------------------------------------------------------------------
 
-fn draw_scene(image: &mut bmp::Image, quality: &QualityPreset, materials: &MaterialTable) {
+fn draw_scene(image: &mut bmp::Image, quality: &QualityPreset, materials: &MaterialTable, debug_normals: bool) {
     // Setup camera
     let image_width = image.get_width();
     let image_height = image.get_height();
@@ -235,6 +259,7 @@ fn draw_scene(image: &mut bmp::Image, quality: &QualityPreset, materials: &Mater
                 &materials,
                 &mut bounces,
                 quality.max_bounces,
+                debug_normals
             );
 
             // Take additional samples
@@ -249,6 +274,7 @@ fn draw_scene(image: &mut bmp::Image, quality: &QualityPreset, materials: &Mater
                     &materials,
                     &mut bounces,
                     quality.max_bounces,
+                    debug_normals
                 );
             }
 
@@ -270,6 +296,7 @@ fn sample_scene(
     materials: &MaterialTable,
     bounces: &mut u32,
     max_bounces: u32,
+    debug_normals: bool
 ) -> Vec3 {
     let mut result = RayHitResult::MAX_HIT;
 
@@ -294,7 +321,7 @@ fn sample_scene(
     }
 
     // Debug normals?
-    if DEBUG_NORMALS {
+    if debug_normals {
         return Vec3::new(
             (result.normal.x + 1.0) * 0.5,
             (result.normal.y + 1.0) * 0.5,
@@ -324,7 +351,7 @@ fn sample_scene(
     let refelcted_ray_direction = Vec3::normalize(refelcted_point - result.position);
     let reflected_ray = Ray::new(reflected_ray_origin, refelcted_ray_direction);
     if *bounces < max_bounces {
-        sample_scene(&reflected_ray, rng, materials, bounces, max_bounces)
+        sample_scene(&reflected_ray, rng, materials, bounces, max_bounces, debug_normals)
             * material.diffuse
             * reflected
     } else {

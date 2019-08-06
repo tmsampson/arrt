@@ -34,10 +34,70 @@
 			}
 		},
 		{
-			"label": "Rust: cargo run",
+			"label": "Rust: cargo run [quality=lowest]",
 			"group": "build",
 			"type": "shell",
-			"command": "cargo run",
+			"command": "cargo run -- --quality=lowest",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"problemMatcher": [
+				"$rustc"
+			],
+			"presentation": {
+				"clear": true
+			}
+		},
+		{
+			"label": "Rust: cargo run [quality=low]",
+			"group": "build",
+			"type": "shell",
+			"command": "cargo run -- --quality=low",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"problemMatcher": [
+				"$rustc"
+			],
+			"presentation": {
+				"clear": true
+			}
+		},
+		{
+			"label": "Rust: cargo run [quality=medium]",
+			"group": "build",
+			"type": "shell",
+			"command": "cargo run -- --quality=medium",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"problemMatcher": [
+				"$rustc"
+			],
+			"presentation": {
+				"clear": true
+			}
+		},
+		{
+			"label": "Rust: cargo run [quality=high]",
+			"group": "build",
+			"type": "shell",
+			"command": "cargo run -- --quality=high",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"problemMatcher": [
+				"$rustc"
+			],
+			"presentation": {
+				"clear": true
+			}
+		},
+		{
+			"label": "Rust: cargo run [quality=highest]",
+			"group": "build",
+			"type": "shell",
+			"command": "cargo run -- --quality=highest",
 			"options": {
 				"cwd": "${workspaceFolder}"
 			},
