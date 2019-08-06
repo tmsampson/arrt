@@ -145,7 +145,7 @@ fn main() {
     // Parse command line args
     let args = parse_command_line();
 
-    // Load quality preset
+    // Load quality presets
     let quality_preset = args.value_of("quality").unwrap_or("default");
     let quality = raytrace::quality::get_preset(quality_preset.to_string());
 
