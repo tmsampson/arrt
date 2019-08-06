@@ -2,6 +2,7 @@ Todo:
   ✔ Implement high-resolution timer + print key stats @done(19-08-05 19:18)
   ✔ Implement quality profiles @done(19-08-06 13:21)
   ✔ Make progress updates fire on a regular interval rather than per scanline @done(19-08-06 13:32)
+  ☐ Use and pass around job structure to wrap all things which need passing to draw_scene
   ☐ Brush up on reflection/refraction:
     ☐ Docs: https://www.scratchapixel.com/lessons/3d-basic-rendering/introduction-to-shading/reflection-refraction-fresnel
     ☐ Snippet: http://asawicki.info/news_1301_reflect_and_refract_functions.html

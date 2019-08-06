@@ -129,6 +129,13 @@ fn parse_command_line() -> clap::ArgMatches<'static> {
 
 // -----------------------------------------------------------------------------------------
 
+struct Job<'a> {
+    image: &'a mut bmp::Image,
+    quality: QualityPreset,
+}
+
+// -----------------------------------------------------------------------------------------
+
 fn main() {
     // Start timer
     let timer_begin = time::precise_time_s();
@@ -184,14 +191,16 @@ fn main() {
         },
     );
 
-    // Setup image
-    let mut image = bmp::Image::new(quality.image_width, quality.image_height);
+    let mut job = Job {
+        image: &mut bmp::Image::new(quality.image_width, quality.image_height),
+        quality,
+    };
 
     // Draw scene
-    draw_scene(&mut image, &quality, &materials, debug_normals);
+    draw_scene(&mut job, &materials, debug_normals);
 
     // Save image
-    save_image(&image, IMAGE_FILENAME);
+    save_image(&job.image, IMAGE_FILENAME);
 
     // Stop timer and report
     let timer_end = time::precise_time_s();
@@ -220,15 +229,10 @@ fn sample_background(ray: &Ray) -> Vec3 {
 
 // -----------------------------------------------------------------------------------------
 
-fn draw_scene(
-    image: &mut bmp::Image,
-    quality: &QualityPreset,
-    materials: &MaterialTable,
-    debug_normals: bool,
-) {
+fn draw_scene(job: &mut Job, materials: &MaterialTable, debug_normals: bool) {
     // Setup camera
-    let image_width = image.get_width();
-    let image_height = image.get_height();
+    let image_width = job.image.get_width();
+    let image_height = job.image.get_height();
     let camera = Camera::new(CAMERA_POSITION, CAMERA_LOOKAT, CAMERA_FOV);
     let tracer = Tracer::new(&camera, image_width, image_height);
 
@@ -236,7 +240,7 @@ fn draw_scene(
     let mut rng: StdRng = SeedableRng::seed_from_u64(RNG_SEED);
 
     // Generate random sampling offsets
-    let additional_samples: usize = quality.samples_per_pixel - 1;
+    let additional_samples: usize = job.quality.samples_per_pixel - 1;
     let mut sample_offsets_x = vec![0.0; additional_samples];
     let mut sample_offsets_y = vec![0.0; additional_samples];
     for sample_index in 0..additional_samples {
@@ -277,7 +281,7 @@ fn draw_scene(
                 &mut rng,
                 &materials,
                 &mut bounces,
-                quality.max_bounces,
+                job.quality.max_bounces,
                 debug_normals,
             );
 
@@ -292,17 +296,18 @@ fn draw_scene(
                     &mut rng,
                     &materials,
                     &mut bounces,
-                    quality.max_bounces,
+                    job.quality.max_bounces,
                     debug_normals,
                 );
             }
 
             // Average samples and store in pixel
-            colour /= quality.samples_per_pixel as f32;
+            colour /= job.quality.samples_per_pixel as f32;
             Vec3::copy_to_pixel(colour, &mut pixel);
 
             // Write pixel
-            image.set_pixel(pixel_x, image_height - pixel_y - 1, pixel);
+            job.image
+                .set_pixel(pixel_x, image_height - pixel_y - 1, pixel);
         }
     }
 }
