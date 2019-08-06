@@ -12,12 +12,11 @@ Todo:
   ☐ Collect bounce stats
   ☐ Add "random" helpers
   ☐ Add winit window
-  ☐ Add build task to set as wallpaper
   ☐ Load scene from file https://serde.rs/
   ☐ Different primitives
     ☐ Cube
     ☐ Shapes
-    ☐ Signed distance fields
+    ☐ Signed distance fields?
   ☐ Scene spatial partitioning
   ☐ Materials
     ☐ Emissive (glowy)
@@ -30,7 +29,7 @@ Todo:
     ☐ Multi-threading
     ☐ Pre-bake per-pixel sampling offsets
     ☐ Pre-bake random unit sphere sample points
-  ☐ Post processing
+  ☐ Post processing pipeline
     ☐ Fog
     ☐ Chromatic abberation
     ☐ Vignette
