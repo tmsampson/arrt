@@ -22,8 +22,8 @@ use raytrace::vector::Vec3;
 const IMAGE_FILENAME: &str = "output.bmp";
 
 // -----------------------------------------------------------------------------------------
-// Config | Rendering
-const RNG_SEED: u64 = 0;
+// Config
+const PROGRESS_UPDATE_INTERVAL: f64 = 1.0;
 
 // -----------------------------------------------------------------------------------------
 // Config | Camera
@@ -99,10 +99,6 @@ impl Material {
 }
 
 type MaterialTable = HashMap<StringLiteral, Material>;
-
-// -----------------------------------------------------------------------------------------
-// Config | Debug
-const PROGRESS_UPDATE_INTERVAL: f64 = 1.0;
 
 // -----------------------------------------------------------------------------------------
 
@@ -194,10 +190,14 @@ fn main() {
         },
     );
 
+    // Setup rng seed
+    let rng_seed: u64 = args.occurrences_of("rng-seed");
+
+    // Setup job
     let mut job = Job {
         image: &mut bmp::Image::new(quality.image_width, quality.image_height),
         quality,
-        rng: &mut SeedableRng::seed_from_u64(RNG_SEED),
+        rng: &mut SeedableRng::seed_from_u64(rng_seed),
         debug_normals: args.is_present("debug-normals"),
     };
 
