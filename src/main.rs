@@ -18,10 +18,6 @@ use raytrace::ray::RayHitResult;
 use raytrace::vector::Vec3;
 
 // -----------------------------------------------------------------------------------------
-// Config | Image
-const IMAGE_FILENAME: &str = "output.bmp";
-
-// -----------------------------------------------------------------------------------------
 // Config
 const PROGRESS_UPDATE_INTERVAL: f64 = 1.0;
 
@@ -108,17 +104,30 @@ fn parse_command_line() -> clap::ArgMatches<'static> {
         .author("Thomas Sampson <tmsampson@gmail.com>")
         .arg(
             Arg::with_name("quality")
-                .short("q")
                 .long("quality")
                 .takes_value(true)
-                .help("Quality preset"),
+                .help("Quality preset")
+                .default_value("default"),
+        )
+        .arg(
+            Arg::with_name("output-file")
+                .long("output-file")
+                .takes_value(true)
+                .help("Output image filename")
+                .default_value("output.bmp"),
         )
         .arg(
             Arg::with_name("debug-normals")
-                .short("normals")
                 .long("debug-normals")
                 .takes_value(false)
                 .help("Debug render normals"),
+        )
+        .arg(
+            Arg::with_name("seed")
+                .long("seed")
+                .takes_value(true)
+                .help("Seed value for random number generator")
+                .default_value("0"),
         )
         .get_matches()
 }
@@ -191,7 +200,7 @@ fn main() {
     );
 
     // Setup rng seed
-    let rng_seed: u64 = args.occurrences_of("rng-seed");
+    let rng_seed: u64 = args.occurrences_of("seed");
 
     // Setup job
     let mut job = Job {
@@ -205,7 +214,8 @@ fn main() {
     draw_scene(&mut job, &materials);
 
     // Save image
-    save_image(&job.image, IMAGE_FILENAME);
+    let output_filename = args.value_of("output-file").unwrap_or("output.bmp");
+    save_image(&job.image, output_filename);
 
     // Stop timer and report
     let timer_end = time::precise_time_s();
@@ -213,7 +223,8 @@ fn main() {
     println!("====================================================");
     println!(" SUMMARY");
     println!("====================================================");
-    println!("     Output: {}", IMAGE_FILENAME);
+    println!("     Output: {}", output_filename);
+    println!("       Seed: {}", rng_seed);
     println!("    Quality: {}", quality_preset);
     println!(" Total time: {:.2} seconds", (timer_end - timer_begin));
     println!("====================================================");
