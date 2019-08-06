@@ -127,7 +127,6 @@ fn parse_command_line()-> clap::ArgMatches<'static>
 // -----------------------------------------------------------------------------------------
 
 fn main() {
-
     // Start timer
     let timer_begin = time::precise_time_s();
 
