@@ -132,7 +132,8 @@ fn parse_command_line() -> clap::ArgMatches<'static> {
 struct Job<'a> {
     image: &'a mut bmp::Image,
     quality: QualityPreset,
-    rng: &'a mut StdRng
+    rng: &'a mut StdRng,
+    debug_normals: bool
 }
 
 // -----------------------------------------------------------------------------------------
@@ -143,9 +144,10 @@ fn main() {
 
     // Parse command line args
     let args = parse_command_line();
+
+    // Load quality preset
     let quality_preset = args.value_of("quality").unwrap_or("default");
     let quality = raytrace::quality::get_preset(quality_preset.to_string());
-    let debug_normals = args.is_present("debug-normals");
 
     // Setup materials
     let mut materials = MaterialTable::new();
@@ -192,16 +194,15 @@ fn main() {
         },
     );
 
-    let mut rng: StdRng = SeedableRng::seed_from_u64(RNG_SEED);
-
     let mut job = Job {
         image: &mut bmp::Image::new(quality.image_width, quality.image_height),
         quality,
-        rng: &mut rng
+        rng: &mut SeedableRng::seed_from_u64(RNG_SEED),
+        debug_normals: args.is_present("debug-normals")
     };
 
     // Draw scene
-    draw_scene(&mut job, &materials, debug_normals);
+    draw_scene(&mut job, &materials);
 
     // Save image
     save_image(&job.image, IMAGE_FILENAME);
@@ -233,7 +234,7 @@ fn sample_background(ray: &Ray) -> Vec3 {
 
 // -----------------------------------------------------------------------------------------
 
-fn draw_scene(job: &mut Job, materials: &MaterialTable, debug_normals: bool) {
+fn draw_scene(job: &mut Job, materials: &MaterialTable) {
     // Setup camera
     let image_width = job.image.get_width();
     let image_height = job.image.get_height();
@@ -282,8 +283,7 @@ fn draw_scene(job: &mut Job, materials: &MaterialTable, debug_normals: bool) {
                 job,
                 &materials,
                 &mut bounces,
-                job.quality.max_bounces,
-                debug_normals,
+                job.quality.max_bounces
             );
 
             // Take additional samples
@@ -297,8 +297,7 @@ fn draw_scene(job: &mut Job, materials: &MaterialTable, debug_normals: bool) {
                     job,
                     &materials,
                     &mut bounces,
-                    job.quality.max_bounces,
-                    debug_normals,
+                    job.quality.max_bounces
                 );
             }
 
@@ -320,8 +319,7 @@ fn sample_scene(
     job: &mut Job,
     materials: &MaterialTable,
     bounces: &mut u32,
-    max_bounces: u32,
-    debug_normals: bool,
+    max_bounces: u32
 ) -> Vec3 {
     let mut result = RayHitResult::MAX_HIT;
 
@@ -346,7 +344,7 @@ fn sample_scene(
     }
 
     // Debug normals?
-    if debug_normals {
+    if job.debug_normals {
         return Vec3::new(
             (result.normal.x + 1.0) * 0.5,
             (result.normal.y + 1.0) * 0.5,
@@ -381,8 +379,7 @@ fn sample_scene(
             job,
             materials,
             bounces,
-            max_bounces,
-            debug_normals,
+            max_bounces
         ) * material.diffuse
             * reflected
     } else {
