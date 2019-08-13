@@ -95,12 +95,13 @@ impl Material {
 }
 
 type MaterialTable = HashMap<StringLiteral, Material>;
+type ImageBuffer = std::vec::Vec<[u8; 4]>;
 
 // -----------------------------------------------------------------------------------------
 
 struct Job<'a> {
-    image: &'a mut bmp::Image,
-    quality: QualityPreset,
+    image_buffer: &'a mut ImageBuffer,
+    quality: &'a QualityPreset,
     rng: &'a mut StdRng,
     debug_normals: bool,
 }
@@ -108,12 +109,6 @@ struct Job<'a> {
 // -----------------------------------------------------------------------------------------
 
 fn main() {
-    // info: https://lib.rs/crates/mini_gl_fb
-    // let mut fb = mini_gl_fb::gotta_go_fast("Hello world!", 800.0, 600.0);
-    // let buffer = vec![[128u8, 0, 0, 255]; 800 * 600];
-    // fb.update_buffer(&buffer);
-    // fb.persist();
-
     // Start timer
     let timer_begin = time::precise_time_s();
 
@@ -172,10 +167,14 @@ fn main() {
     // Setup rng seed
     let rng_seed: u64 = args.occurrences_of("seed");
 
+    // Setup image buffer
+    let pixel_count = quality.image_width * quality.image_height;
+    let mut image_buffer = vec![[0u8, 0u8, 0u8, 255u8]; pixel_count as usize];
+
     // Setup job
     let mut job = Job {
-        image: &mut bmp::Image::new(quality.image_width, quality.image_height),
-        quality,
+        image_buffer: &mut image_buffer,
+        quality: &quality,
         rng: &mut SeedableRng::seed_from_u64(rng_seed),
         debug_normals: args.is_present("debug-normals"),
     };
@@ -183,9 +182,10 @@ fn main() {
     // Draw scene
     draw_scene(&mut job, &materials);
 
-    // Save image
+    // Save image?
+    let output_bmp = bmp::Image::new(quality.image_width, quality.image_height);
     let output_filename = args.value_of("output-file").unwrap_or("output.bmp");
-    save_image(&job.image, output_filename);
+    save_image(&output_bmp, output_filename);
 
     // Stop timer and report
     let timer_end = time::precise_time_s();
@@ -198,6 +198,11 @@ fn main() {
     println!("    Quality: {}", quality_preset);
     println!(" Total time: {:.2} seconds", (timer_end - timer_begin));
     println!("====================================================");
+
+    // info: https://lib.rs/crates/mini_gl_fb
+    let mut window = mini_gl_fb::gotta_go_fast("Rust: Toy Raytracer", quality.image_width as f64, quality.image_height as f64);
+    window.update_buffer(&image_buffer);
+    window.persist();
 }
 
 // -----------------------------------------------------------------------------------------
@@ -217,8 +222,8 @@ fn sample_background(ray: &Ray) -> Vec3 {
 
 fn draw_scene(job: &mut Job, materials: &MaterialTable) {
     // Setup camera
-    let image_width = job.image.get_width();
-    let image_height = job.image.get_height();
+    let image_width = job.quality.image_width;
+    let image_height = job.quality.image_height;
     let camera = Camera::new(CAMERA_POSITION, CAMERA_LOOKAT, CAMERA_FOV);
     let tracer = Tracer::new(&camera, image_width, image_height);
 
@@ -235,7 +240,7 @@ fn draw_scene(job: &mut Job, materials: &MaterialTable) {
     let mut last_progress_update = time::precise_time_s();
 
     // For each scanline...
-    let mut pixel = bmp::Pixel::new(0, 0, 0);
+    let mut pixel = [0u8, 0u8, 0u8, 255u8];
     for pixel_y in 0..image_height {
         let pixel_y_f = pixel_y as f32;
 
@@ -279,11 +284,14 @@ fn draw_scene(job: &mut Job, materials: &MaterialTable) {
 
             // Average samples and store in pixel
             colour /= job.quality.samples_per_pixel as f32;
-            Vec3::copy_to_pixel(colour, &mut pixel);
+            pixel[0] = (colour.x * 255.0).round() as u8;
+            pixel[1] = (colour.y * 255.0).round() as u8;
+            pixel[2] = (colour.z * 255.0).round() as u8;
+            //Vec3::copy_to_pixel(colour, &mut pixel);
 
             // Write pixel
-            job.image
-                .set_pixel(pixel_x, image_height - pixel_y - 1, pixel);
+            let pixel_index = (pixel_y * image_width) + pixel_x;
+            job.image_buffer[pixel_index as usize] = pixel;
         }
     }
 }
