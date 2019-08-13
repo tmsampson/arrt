@@ -183,9 +183,8 @@ fn main() {
     draw_scene(&mut job, &materials);
 
     // Save image?
-    let output_bmp = bmp::Image::new(quality.image_width, quality.image_height);
     let output_filename = args.value_of("output-file").unwrap_or("output.bmp");
-    save_image(&output_bmp, output_filename);
+    save_image(&job, output_filename);
 
     // Stop timer and report
     let timer_end = time::precise_time_s();
@@ -200,15 +199,37 @@ fn main() {
     println!("====================================================");
 
     // Show window
-    let mut window = mini_gl_fb::gotta_go_fast("Rust: Toy Raytracer", quality.image_width as f64, quality.image_height as f64);
+    let mut window = mini_gl_fb::gotta_go_fast(
+        "Rust: Toy Raytracer",
+        quality.image_width as f64,
+        quality.image_height as f64,
+    );
     window.update_buffer(&image_buffer);
     window.persist();
 }
 
 // -----------------------------------------------------------------------------------------
 
-fn save_image(image: &bmp::Image, filename: &str) {
-    image.save(filename).expect("Failed");
+fn save_image(job: &Job, filename: &str) {
+    // Create bitmap
+    let mut output_bmp = bmp::Image::new(job.quality.image_width, job.quality.image_height);
+
+    // Copy image buffer to bitmap
+    for x in 0..job.quality.image_width {
+        for y in 0..job.quality.image_height {
+            let pixel_index = ((job.quality.image_width * y) + x) as usize;
+            let pixel = bmp::Pixel
+            {
+                r: job.image_buffer[pixel_index][0],
+                g: job.image_buffer[pixel_index][1],
+                b: job.image_buffer[pixel_index][2],
+            };
+            output_bmp.set_pixel(x, job.quality.image_height - y - 1, pixel);
+        }
+    }
+
+    // Save bitmap
+    output_bmp.save(filename).expect("Failed");
 }
 
 // -----------------------------------------------------------------------------------------
