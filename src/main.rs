@@ -1,6 +1,5 @@
 // -----------------------------------------------------------------------------------------
 
-use clap::{App, Arg};
 use rand::prelude::*;
 use std::collections::HashMap;
 
@@ -9,6 +8,7 @@ use std::collections::HashMap;
 mod raytrace;
 use raytrace::camera::Camera;
 use raytrace::camera::Tracer;
+use raytrace::command_line;
 use raytrace::geometry::Plane;
 use raytrace::geometry::Sphere;
 use raytrace::misc::StringLiteral;
@@ -98,42 +98,6 @@ type MaterialTable = HashMap<StringLiteral, Material>;
 
 // -----------------------------------------------------------------------------------------
 
-fn parse_command_line<'a>() -> clap::ArgMatches<'a> {
-    App::new("Ray Tracer")
-        .version("0.0.0")
-        .author("Thomas Sampson <tmsampson@gmail.com>")
-        .arg(
-            Arg::with_name("quality")
-                .long("quality")
-                .takes_value(true)
-                .help("Quality preset")
-                .default_value("default"),
-        )
-        .arg(
-            Arg::with_name("output-file")
-                .long("output-file")
-                .takes_value(true)
-                .help("Output image filename")
-                .default_value("output.bmp"),
-        )
-        .arg(
-            Arg::with_name("debug-normals")
-                .long("debug-normals")
-                .takes_value(false)
-                .help("Debug render normals"),
-        )
-        .arg(
-            Arg::with_name("seed")
-                .long("seed")
-                .takes_value(true)
-                .help("Seed value for random number generator")
-                .default_value("0"),
-        )
-        .get_matches()
-}
-
-// -----------------------------------------------------------------------------------------
-
 struct Job<'a> {
     image: &'a mut bmp::Image,
     quality: QualityPreset,
@@ -144,11 +108,17 @@ struct Job<'a> {
 // -----------------------------------------------------------------------------------------
 
 fn main() {
+    // info: https://lib.rs/crates/mini_gl_fb
+    // let mut fb = mini_gl_fb::gotta_go_fast("Hello world!", 800.0, 600.0);
+    // let buffer = vec![[128u8, 0, 0, 255]; 800 * 600];
+    // fb.update_buffer(&buffer);
+    // fb.persist();
+
     // Start timer
     let timer_begin = time::precise_time_s();
 
     // Parse command line args
-    let args = parse_command_line();
+    let args = command_line::parse();
 
     // Load quality presets
     let quality_preset = args.value_of("quality").unwrap_or("default");
