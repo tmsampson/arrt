@@ -199,7 +199,7 @@ fn main() {
     println!(" Total time: {:.2} seconds", (timer_end - timer_begin));
     println!("====================================================");
 
-    // info: https://lib.rs/crates/mini_gl_fb
+    // Show window
     let mut window = mini_gl_fb::gotta_go_fast("Rust: Toy Raytracer", quality.image_width as f64, quality.image_height as f64);
     window.update_buffer(&image_buffer);
     window.persist();
@@ -284,10 +284,7 @@ fn draw_scene(job: &mut Job, materials: &MaterialTable) {
 
             // Average samples and store in pixel
             colour /= job.quality.samples_per_pixel as f32;
-            pixel[0] = (colour.x * 255.0).round() as u8;
-            pixel[1] = (colour.y * 255.0).round() as u8;
-            pixel[2] = (colour.z * 255.0).round() as u8;
-            //Vec3::copy_to_pixel(colour, &mut pixel);
+            Vec3::copy_to_pixel(colour, &mut pixel);
 
             // Write pixel
             let pixel_index = (pixel_y * image_width) + pixel_x;

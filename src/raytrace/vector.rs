@@ -195,10 +195,10 @@ impl Vec3 {
         )
     }
 
-    pub fn copy_to_pixel(v: Vec3, p: &mut bmp::Pixel) {
-        p.r = (v.x * 255.0).round() as u8;
-        p.g = (v.y * 255.0).round() as u8;
-        p.b = (v.z * 255.0).round() as u8;
+    pub fn copy_to_pixel(v: Vec3, p: &mut [u8; 4]) {
+        p[0] = (v.x * 255.0).round() as u8;
+        p[1] = (v.y * 255.0).round() as u8;
+        p[2] = (v.z * 255.0).round() as u8;
     }
 
     pub fn reflect(incident: Vec3, normal: Vec3) -> Vec3 {
