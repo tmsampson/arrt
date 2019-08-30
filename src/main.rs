@@ -1,21 +1,21 @@
 // -----------------------------------------------------------------------------------------
-
-use rand::prelude::*;
+// Arrt dependencies
+mod arrt;
+use arrt::camera::Camera;
+use arrt::camera::Tracer;
+use arrt::command_line;
+use arrt::geometry::Plane;
+use arrt::geometry::Sphere;
+use arrt::material::MaterialBank;
+use arrt::misc::StringLiteral;
+use arrt::quality::QualityPreset;
+use arrt::ray::Ray;
+use arrt::ray::RayHitResult;
+use arrt::vector::Vec3;
 
 // -----------------------------------------------------------------------------------------
-
-mod raytrace;
-use raytrace::camera::Camera;
-use raytrace::camera::Tracer;
-use raytrace::command_line;
-use raytrace::geometry::Plane;
-use raytrace::geometry::Sphere;
-use raytrace::material::MaterialBank;
-use raytrace::misc::StringLiteral;
-use raytrace::quality::QualityPreset;
-use raytrace::ray::Ray;
-use raytrace::ray::RayHitResult;
-use raytrace::vector::Vec3;
+// External dependencies
+use rand::prelude::*;
 
 // -----------------------------------------------------------------------------------------
 // Config
@@ -119,7 +119,7 @@ fn main() {
 
     // Load quality presets
     let quality_preset = args.value_of("quality").unwrap_or("default");
-    let quality = raytrace::quality::get_preset(quality_preset);
+    let quality = arrt::quality::get_preset(quality_preset);
 
     // Load materials
     let materials = MaterialBank::load_from_file(MATERIALS_FILE);
@@ -137,7 +137,7 @@ fn main() {
         quality: &quality,
         rng: &mut SeedableRng::seed_from_u64(rng_seed),
         debug_normals: args.is_present("debug-normals"),
-        materials : &materials,
+        materials: &materials,
     };
 
     // Draw scene
@@ -245,12 +245,8 @@ fn draw_scene(job: &mut Job) {
             // Sample centroid
             let mut bounces = 0;
             let ray_centroid = tracer.get_ray(pixel_x_f, pixel_y_f);
-            let mut colour = sample_scene(
-                &ray_centroid,
-                job,
-                &mut bounces,
-                job.quality.max_bounces,
-            );
+            let mut colour =
+                sample_scene(&ray_centroid, job, &mut bounces, job.quality.max_bounces);
 
             // Take additional samples
             for sample_index in 0..additional_samples {
@@ -258,8 +254,7 @@ fn draw_scene(job: &mut Job) {
                 let offset_x = (sample_offsets_x[sample_index] - 0.5) * 0.99;
                 let offset_y = (sample_offsets_y[sample_index] - 0.5) * 0.99;
                 let ray = tracer.get_ray(pixel_x_f + offset_x, pixel_y_f + offset_y);
-                colour +=
-                    sample_scene(&ray, job, &mut bounces, job.quality.max_bounces);
+                colour += sample_scene(&ray, job, &mut bounces, job.quality.max_bounces);
             }
 
             // Average samples and store in pixel
@@ -275,12 +270,7 @@ fn draw_scene(job: &mut Job) {
 
 // -----------------------------------------------------------------------------------------
 
-fn sample_scene(
-    ray: &Ray,
-    job: &mut Job,
-    bounces: &mut u32,
-    max_bounces: u32,
-) -> Vec3 {
+fn sample_scene(ray: &Ray, job: &mut Job, bounces: &mut u32, max_bounces: u32) -> Vec3 {
     let mut result = RayHitResult::MAX_HIT;
 
     // Manage bounces
@@ -327,9 +317,7 @@ fn sample_scene(
     let refelcted_ray_direction = Vec3::normalize(refelcted_point - result.position);
     let reflected_ray = Ray::new(reflected_ray_origin, refelcted_ray_direction);
     if *bounces < max_bounces {
-        sample_scene(&reflected_ray, job, bounces, max_bounces)
-            * material.diffuse
-            * reflected
+        sample_scene(&reflected_ray, job, bounces, max_bounces) * material.diffuse * reflected
     } else {
         material.diffuse * reflected
     }
@@ -342,7 +330,7 @@ fn sample_scene_spheres(ray: &Ray) -> RayHitResult {
     let mut closest_result = RayHitResult::MAX_HIT;
     let mut closest_sphere_centre = Vec3::ZERO;
     for sphere in &SCENE_SPHERES {
-        let result = raytrace::intersect::ray_sphere(&ray, &sphere);
+        let result = arrt::intersect::ray_sphere(&ray, &sphere);
         if result.hit && (result.distance < closest_result.distance) {
             closest_result = result;
             closest_sphere_centre = sphere.centre;
@@ -366,7 +354,7 @@ fn sample_scene_planes(ray: &Ray) -> RayHitResult {
         normal: Vec3::UP,
         diffuse: Vec3::ONE,
     };
-    raytrace::intersect::ray_plane(&ray, &plane)
+    arrt::intersect::ray_plane(&ray, &plane)
 }
 
 // -----------------------------------------------------------------------------------------

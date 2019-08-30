@@ -1,9 +1,9 @@
 // -----------------------------------------------------------------------------------------
 
+use super::vector::Vec3;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
-use super::vector::Vec3;
 
 // -----------------------------------------------------------------------------------------
 
@@ -65,7 +65,11 @@ impl MaterialBank {
         Material {
             name: String::from("default"),
             absorbed: 0.3,
-            diffuse: Vec3 { x: 1.0, y: 0.0, z: 0.0 }
+            diffuse: Vec3 {
+                x: 1.0,
+                y: 0.0,
+                z: 0.0,
+            },
         }
     }
 

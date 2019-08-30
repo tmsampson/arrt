@@ -1,5 +1,6 @@
 [package]
-name = "ray_tracing"
+name = "arrt"
+description = "Another Rust Ray Tracer"
 version = "0.1.0"
 authors = ["Thomas Sampson <tmsampson@gmail.com>"]
 edition = "2018"
