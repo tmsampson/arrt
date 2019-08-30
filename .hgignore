@@ -1,4 +1,0 @@
-^target/
-^output.bmp
-^.vscode/ipch/
-glob:*.rs.bk
