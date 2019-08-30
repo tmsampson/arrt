@@ -1,0 +1,56 @@
+{
+	"red" : {
+		"diffuse" :
+		{
+			"x" : 1.0,
+			"y" : 0.0,
+			"z" : 0.0
+		},
+		"absorbed" : 0.3
+	},
+	"green" : {
+		"diffuse" :
+		{
+			"x" : 0.0,
+			"y" : 1.0,
+			"z" : 0.0
+		},
+		"absorbed" : 0.3
+	},
+	"blue" : {
+		"diffuse" :
+		{
+			"x" : 0.0,
+			"y" : 0.0,
+			"z" : 1.0
+		},
+		"absorbed" : 0.3
+	},
+	"white" : {
+		"diffuse" :
+		{
+			"x" : 1.0,
+			"y" : 1.0,
+			"z" : 1.0
+		},
+		"absorbed" : 0.3
+	},
+	"black" : {
+		"diffuse" :
+		{
+			"x" : 0.0,
+			"y" : 0.0,
+			"z" : 0.0
+		},
+		"absorbed" : 0.3
+	},
+	"mirror" : {
+		"diffuse" :
+		{
+			"x" : 1.0,
+			"y" : 1.0,
+			"z" : 1.0
+		},
+		"absorbed" : 0.3
+	}
+}

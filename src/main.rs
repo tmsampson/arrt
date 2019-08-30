@@ -1,7 +1,6 @@
 // -----------------------------------------------------------------------------------------
 
 use rand::prelude::*;
-use std::collections::HashMap;
 
 // -----------------------------------------------------------------------------------------
 
@@ -11,6 +10,7 @@ use raytrace::camera::Tracer;
 use raytrace::command_line;
 use raytrace::geometry::Plane;
 use raytrace::geometry::Sphere;
+use raytrace::material::MaterialBank;
 use raytrace::misc::StringLiteral;
 use raytrace::quality::QualityPreset;
 use raytrace::ray::Ray;
@@ -20,6 +20,7 @@ use raytrace::vector::Vec3;
 // -----------------------------------------------------------------------------------------
 // Config
 const PROGRESS_UPDATE_INTERVAL: f64 = 1.0;
+const MATERIALS_FILE: StringLiteral = "materials.json";
 
 // -----------------------------------------------------------------------------------------
 // Config | Camera
@@ -82,19 +83,19 @@ const SCENE_SPHERES: [Sphere; 3] = [
 
 // -----------------------------------------------------------------------------------------
 
-pub struct Material {
-    pub diffuse: Vec3,
-    pub absorbtion: f32,
-}
+// pub struct Material {
+//     pub diffuse: Vec3,
+//     pub absorbtion: f32,
+// }
 
-impl Material {
-    pub const NONE: Material = Material {
-        diffuse: Vec3::WHITE,
-        absorbtion: 1.0,
-    };
-}
+// impl Material {
+//     pub const NONE: Material = Material {
+//         diffuse: Vec3::WHITE,
+//         absorbtion: 1.0,
+//     };
+// }
 
-type MaterialTable = HashMap<StringLiteral, Material>;
+// type MaterialTable = HashMap<StringLiteral, Material>;
 type ImageBuffer = std::vec::Vec<[u8; 4]>;
 
 // -----------------------------------------------------------------------------------------
@@ -104,6 +105,7 @@ struct Job<'a> {
     quality: &'a QualityPreset,
     rng: &'a mut StdRng,
     debug_normals: bool,
+    materials: &'a MaterialBank,
 }
 
 // -----------------------------------------------------------------------------------------
@@ -119,50 +121,8 @@ fn main() {
     let quality_preset = args.value_of("quality").unwrap_or("default");
     let quality = raytrace::quality::get_preset(quality_preset);
 
-    // Setup materials
-    let mut materials = MaterialTable::new();
-    materials.insert(
-        "red",
-        Material {
-            diffuse: Vec3::RED,
-            absorbtion: 0.3,
-        },
-    );
-    materials.insert(
-        "green",
-        Material {
-            diffuse: Vec3::GREEN,
-            absorbtion: 0.3,
-        },
-    );
-    materials.insert(
-        "blue",
-        Material {
-            diffuse: Vec3::BLUE,
-            absorbtion: 0.3,
-        },
-    );
-    materials.insert(
-        "white",
-        Material {
-            diffuse: Vec3::WHITE,
-            absorbtion: 0.3,
-        },
-    );
-    materials.insert(
-        "black",
-        Material {
-            diffuse: Vec3::BLACK,
-            absorbtion: 0.3,
-        },
-    );
-    materials.insert(
-        "mirror",
-        Material {
-            diffuse: Vec3::WHITE,
-            absorbtion: 0.0,
-        },
-    );
+    // Load materials
+    let materials = MaterialBank::load_from_file(MATERIALS_FILE);
 
     // Setup rng seed
     let rng_seed: u64 = args.occurrences_of("seed");
@@ -177,10 +137,11 @@ fn main() {
         quality: &quality,
         rng: &mut SeedableRng::seed_from_u64(rng_seed),
         debug_normals: args.is_present("debug-normals"),
+        materials : &materials,
     };
 
     // Draw scene
-    draw_scene(&mut job, &materials);
+    draw_scene(&mut job);
 
     // Save image?
     let output_filename = args.value_of("output-file").unwrap_or("output.bmp");
@@ -218,8 +179,7 @@ fn save_image(job: &Job, filename: &str) {
     for x in 0..job.quality.image_width {
         for y in 0..job.quality.image_height {
             let pixel_index = ((job.quality.image_width * y) + x) as usize;
-            let pixel = bmp::Pixel
-            {
+            let pixel = bmp::Pixel {
                 r: job.image_buffer[pixel_index][0],
                 g: job.image_buffer[pixel_index][1],
                 b: job.image_buffer[pixel_index][2],
@@ -241,7 +201,7 @@ fn sample_background(ray: &Ray) -> Vec3 {
 
 // -----------------------------------------------------------------------------------------
 
-fn draw_scene(job: &mut Job, materials: &MaterialTable) {
+fn draw_scene(job: &mut Job) {
     // Setup camera
     let image_width = job.quality.image_width;
     let image_height = job.quality.image_height;
@@ -288,7 +248,6 @@ fn draw_scene(job: &mut Job, materials: &MaterialTable) {
             let mut colour = sample_scene(
                 &ray_centroid,
                 job,
-                &materials,
                 &mut bounces,
                 job.quality.max_bounces,
             );
@@ -300,7 +259,7 @@ fn draw_scene(job: &mut Job, materials: &MaterialTable) {
                 let offset_y = (sample_offsets_y[sample_index] - 0.5) * 0.99;
                 let ray = tracer.get_ray(pixel_x_f + offset_x, pixel_y_f + offset_y);
                 colour +=
-                    sample_scene(&ray, job, &materials, &mut bounces, job.quality.max_bounces);
+                    sample_scene(&ray, job, &mut bounces, job.quality.max_bounces);
             }
 
             // Average samples and store in pixel
@@ -319,7 +278,6 @@ fn draw_scene(job: &mut Job, materials: &MaterialTable) {
 fn sample_scene(
     ray: &Ray,
     job: &mut Job,
-    materials: &MaterialTable,
     bounces: &mut u32,
     max_bounces: u32,
 ) -> Vec3 {
@@ -355,18 +313,11 @@ fn sample_scene(
     }
 
     // Grab material
-    let material = match materials.get(result.material) {
-        Some(material) => material,
-        None => {
-            println!("Failed to find material: {}", result.material);
-            &Material::NONE
-        }
-    };
+    let material = job.materials.get(result.material_name);
 
     // Shade pixel (diffuse)
-    let absorbed = 0.3;
-    let reflected = 1.0 - absorbed;
-    let refelcted_point = if result.material == "mirror" {
+    let reflected = 1.0 - material.absorbed;
+    let refelcted_point = if material.name == "mirror" {
         result.position + Vec3::reflect(ray.direction, result.normal)
     } else {
         result.position + result.normal + (Vec3::random_point_in_unit_sphere(job.rng) * 0.99)
@@ -376,7 +327,7 @@ fn sample_scene(
     let refelcted_ray_direction = Vec3::normalize(refelcted_point - result.position);
     let reflected_ray = Ray::new(reflected_ray_origin, refelcted_ray_direction);
     if *bounces < max_bounces {
-        sample_scene(&reflected_ray, job, materials, bounces, max_bounces)
+        sample_scene(&reflected_ray, job, bounces, max_bounces)
             * material.diffuse
             * reflected
     } else {

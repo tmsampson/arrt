@@ -1,11 +1,12 @@
 // -----------------------------------------------------------------------------------------
 
+use serde::{Deserialize, Serialize};
 use rand::prelude::*;
 use std::ops;
 
 // -----------------------------------------------------------------------------------------
 // Type
-#[derive(Copy, Clone)]
+#[derive(Serialize, Deserialize, Debug, Default, Copy, Clone)]
 pub struct Vec3 {
     pub x: f32,
     pub y: f32,
@@ -30,31 +31,31 @@ impl Vec3 {
         y: 1.0,
         z: 1.0,
     };
-    pub const RED: Vec3 = Vec3 {
-        x: 1.0,
-        y: 0.0,
-        z: 0.0,
-    };
-    pub const GREEN: Vec3 = Vec3 {
-        x: 0.0,
-        y: 1.0,
-        z: 0.0,
-    };
-    pub const BLUE: Vec3 = Vec3 {
-        x: 0.0,
-        y: 0.0,
-        z: 1.0,
-    };
-    pub const BLACK: Vec3 = Vec3 {
-        x: 0.0,
-        y: 0.0,
-        z: 0.0,
-    };
-    pub const WHITE: Vec3 = Vec3 {
-        x: 1.0,
-        y: 1.0,
-        z: 1.0,
-    };
+    // pub const RED: Vec3 = Vec3 {
+    //     x: 1.0,
+    //     y: 0.0,
+    //     z: 0.0,
+    // };
+    // pub const GREEN: Vec3 = Vec3 {
+    //     x: 0.0,
+    //     y: 1.0,
+    //     z: 0.0,
+    // };
+    // pub const BLUE: Vec3 = Vec3 {
+    //     x: 0.0,
+    //     y: 0.0,
+    //     z: 1.0,
+    // };
+    // pub const BLACK: Vec3 = Vec3 {
+    //     x: 0.0,
+    //     y: 0.0,
+    //     z: 0.0,
+    // };
+    // pub const WHITE: Vec3 = Vec3 {
+    //     x: 1.0,
+    //     y: 1.0,
+    //     z: 1.0,
+    // };
 }
 
 // -----------------------------------------------------------------------------------------
