@@ -1,4 +1,4 @@
-# A.A.R.T
+# A.R.R.T
 Another Rust Ray Tracer
 
 ![splash.png](https://github.com/tmsampson/arrt/raw/master/splash.png)
