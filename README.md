@@ -1,6 +1,7 @@
 # A.A.R.T
 Another Rust Ray Tracer
 
+![splash.png](https://github.com/tmsampson/arrt/raw/master/splash.png)
 
 ## Build
 1. Open root directory in [Visual Studio Code](https://code.visualstudio.com)
