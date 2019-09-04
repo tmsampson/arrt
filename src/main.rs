@@ -51,6 +51,11 @@ const SKY_COLOUR_TOP: Vec3 = Vec3 {
 
 // -----------------------------------------------------------------------------------------
 // Config | Scene
+const FLOOR_PLANE: Plane = Plane {
+    position: Vec3::ZERO,
+    normal: Vec3::UP,
+    diffuse: Vec3::ONE,
+};
 const SCENE_SPHERES: [Sphere; 3] = [
     Sphere {
         centre: Vec3 {
@@ -83,19 +88,6 @@ const SCENE_SPHERES: [Sphere; 3] = [
 
 // -----------------------------------------------------------------------------------------
 
-// pub struct Material {
-//     pub diffuse: Vec3,
-//     pub absorbtion: f32,
-// }
-
-// impl Material {
-//     pub const NONE: Material = Material {
-//         diffuse: Vec3::WHITE,
-//         absorbtion: 1.0,
-//     };
-// }
-
-// type MaterialTable = HashMap<StringLiteral, Material>;
 type ImageBuffer = std::vec::Vec<[u8; 4]>;
 
 // -----------------------------------------------------------------------------------------
@@ -349,12 +341,7 @@ fn sample_scene_spheres(ray: &Ray) -> RayHitResult {
 // -----------------------------------------------------------------------------------------
 
 fn sample_scene_planes(ray: &Ray) -> RayHitResult {
-    let plane = Plane {
-        position: Vec3::ZERO,
-        normal: Vec3::UP,
-        diffuse: Vec3::ONE,
-    };
-    arrt::intersect::ray_plane(&ray, &plane)
+    arrt::intersect::ray_plane(&ray, &FLOOR_PLANE)
 }
 
 // -----------------------------------------------------------------------------------------
