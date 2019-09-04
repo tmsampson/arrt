@@ -55,9 +55,7 @@ impl MaterialBank {
 
     pub fn get(&self, name: &str) -> Material {
         match self.materials.get(name) {
-            Some(material) => {
-                material.clone()
-            }
+            Some(material) => material.clone(),
             None => {
                 println!("Failed to find material: {}", name);
                 MaterialBank::get_default()
