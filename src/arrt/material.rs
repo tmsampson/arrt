@@ -36,7 +36,15 @@ impl MaterialBank {
         let data = fs::read_to_string(file)
             .expect(&format!("ERROR: Could not load materials file: '{}'", file));
 
-        let materials: MaterialTable = serde_json::from_str(&data).unwrap();
+        // Deserialise
+        let mut materials: MaterialTable = serde_json::from_str(&data).unwrap();
+
+        // Use JSON key names as material names
+        for (key, value) in &mut materials {
+            value.name = key.clone();
+        }
+
+        // Return bank
         MaterialBank {
             _name: String::from(file),
             materials,
@@ -48,9 +56,7 @@ impl MaterialBank {
     pub fn get(&self, name: &str) -> Material {
         match self.materials.get(name) {
             Some(material) => {
-                let mut result = material.clone();
-                result.name = String::from(name); // Use map key as name
-                result
+                material.clone()
             }
             None => {
                 println!("Failed to find material: {}", name);
