@@ -23,17 +23,23 @@ pub fn parse<'a>() -> clap::ArgMatches<'a> {
                 .default_value("output.bmp"),
         )
         .arg(
+            Arg::with_name("seed")
+                .long("seed")
+                .takes_value(true)
+                .help("Seed value for random number generator")
+                .default_value("0"),
+        )
+        .arg(
             Arg::with_name("debug-normals")
                 .long("debug-normals")
                 .takes_value(false)
                 .help("Debug render normals"),
         )
         .arg(
-            Arg::with_name("seed")
-                .long("seed")
-                .takes_value(true)
-                .help("Seed value for random number generator")
-                .default_value("0"),
+            Arg::with_name("debug-heatmap")
+                .long("debug-heatmap")
+                .takes_value(false)
+                .help("Debug render heatmp"),
         )
         .get_matches()
 }

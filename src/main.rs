@@ -6,9 +6,9 @@ use arrt::camera::Tracer;
 use arrt::command_line;
 use arrt::geometry::Plane;
 use arrt::geometry::Sphere;
+use arrt::job::Job;
 use arrt::material::MaterialBank;
 use arrt::misc::StringLiteral;
-use arrt::quality::QualityPreset;
 use arrt::ray::Ray;
 use arrt::ray::RayHitResult;
 use arrt::vector::Vec3;
@@ -88,20 +88,6 @@ const SCENE_SPHERES: [Sphere; 3] = [
 
 // -----------------------------------------------------------------------------------------
 
-type ImageBuffer = std::vec::Vec<[u8; 4]>;
-
-// -----------------------------------------------------------------------------------------
-
-struct Job<'a> {
-    image_buffer: &'a mut ImageBuffer,
-    quality: &'a QualityPreset,
-    rng: &'a mut StdRng,
-    debug_normals: bool,
-    materials: &'a MaterialBank,
-}
-
-// -----------------------------------------------------------------------------------------
-
 fn main() {
     // Start timer
     let timer_begin = time::precise_time_s();
@@ -119,25 +105,17 @@ fn main() {
     // Setup rng seed
     let rng_seed: u64 = args.occurrences_of("seed");
 
-    // Setup image buffer
-    let pixel_count = quality.image_width * quality.image_height;
-    let mut image_buffer = vec![[0u8, 0u8, 0u8, 255u8]; pixel_count as usize];
-
     // Setup job
-    let mut job = Job {
-        image_buffer: &mut image_buffer,
-        quality: &quality,
-        rng: &mut SeedableRng::seed_from_u64(rng_seed),
-        debug_normals: args.is_present("debug-normals"),
-        materials: &materials,
-    };
+    let debug_normals = args.is_present("debug-normals");
+    let debug_heatmap = args.is_present("debug-heatmap");
+    let mut job = Job::new(&quality, &materials, rng_seed, debug_normals, debug_heatmap);
 
     // Draw scene
     draw_scene(&mut job);
 
     // Save image?
     let output_filename = args.value_of("output-file").unwrap_or("output.bmp");
-    save_image(&job, output_filename);
+    job.save_image(output_filename);
 
     // Stop timer and report
     let timer_end = time::precise_time_s();
@@ -153,35 +131,12 @@ fn main() {
 
     // Show window
     let mut window = mini_gl_fb::gotta_go_fast(
-        "Rust: Toy Raytracer",
+        "ARRT: Another Rust Ray Tracer",
         quality.image_width as f64,
         quality.image_height as f64,
     );
-    window.update_buffer(&image_buffer);
+    window.update_buffer(&job.image_buffer);
     window.persist();
-}
-
-// -----------------------------------------------------------------------------------------
-
-fn save_image(job: &Job, filename: &str) {
-    // Create bitmap
-    let mut output_bmp = bmp::Image::new(job.quality.image_width, job.quality.image_height);
-
-    // Copy image buffer to bitmap
-    for x in 0..job.quality.image_width {
-        for y in 0..job.quality.image_height {
-            let pixel_index = ((job.quality.image_width * y) + x) as usize;
-            let pixel = bmp::Pixel {
-                r: job.image_buffer[pixel_index][0],
-                g: job.image_buffer[pixel_index][1],
-                b: job.image_buffer[pixel_index][2],
-            };
-            output_bmp.set_pixel(x, job.quality.image_height - y - 1, pixel);
-        }
-    }
-
-    // Save bitmap
-    output_bmp.save(filename).expect("Failed");
 }
 
 // -----------------------------------------------------------------------------------------
@@ -235,10 +190,12 @@ fn draw_scene(job: &mut Job) {
             let pixel_x_f = pixel_x as f32;
 
             // Sample centroid
+            let mut bounces_per_pixel = 0;
             let mut bounces = 0;
             let ray_centroid = tracer.get_ray(pixel_x_f, pixel_y_f);
             let mut colour =
                 sample_scene(&ray_centroid, job, &mut bounces, job.quality.max_bounces);
+            bounces_per_pixel += bounces;
 
             // Take additional samples
             for sample_index in 0..additional_samples {
@@ -247,10 +204,19 @@ fn draw_scene(job: &mut Job) {
                 let offset_y = (sample_offsets_y[sample_index] - 0.5) * 0.99;
                 let ray = tracer.get_ray(pixel_x_f + offset_x, pixel_y_f + offset_y);
                 colour += sample_scene(&ray, job, &mut bounces, job.quality.max_bounces);
+                bounces_per_pixel += bounces;
             }
 
-            // Average samples and store in pixel
+            // Average colour
             colour /= job.quality.samples_per_pixel as f32;
+
+            // Draw heatmap?
+            if job.debug_heatmap {
+                let heat = (bounces_per_pixel as f32 / job.quality.samples_per_pixel as f32) / job.quality.max_bounces as f32;
+                colour = Vec3::lerp(Vec3::GREEN, Vec3::RED, heat);
+            }
+
+            // Store pixel
             Vec3::copy_to_pixel(colour, &mut pixel);
 
             // Write pixel
@@ -302,14 +268,15 @@ fn sample_scene(ray: &Ray, job: &mut Job, bounces: &mut u32, max_bounces: u32) -
     let refelcted_point = if material.name == "mirror" {
         result.position + Vec3::reflect(ray.direction, result.normal)
     } else {
-        result.position + result.normal + (Vec3::random_point_in_unit_sphere(job.rng) * 0.99)
+        result.position + result.normal + (Vec3::random_point_in_unit_sphere(&mut job.rng) * 0.99)
     };
 
     let reflected_ray_origin = result.position + (result.normal * 0.00001);
     let refelcted_ray_direction = Vec3::normalize(refelcted_point - result.position);
     let reflected_ray = Ray::new(reflected_ray_origin, refelcted_ray_direction);
     if *bounces < max_bounces {
-        sample_scene(&reflected_ray, job, bounces, max_bounces) * material.diffuse * reflected
+        let bounce_sample = sample_scene(&reflected_ray, job, bounces, max_bounces);
+        bounce_sample * material.diffuse * reflected
     } else {
         material.diffuse * reflected
     }
