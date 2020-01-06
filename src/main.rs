@@ -96,8 +96,8 @@ fn main() {
     let args = command_line::parse();
 
     // Load quality presets
-    let quality_preset = args.value_of("quality").unwrap_or("default");
-    let quality = arrt::quality::get_preset(quality_preset);
+    let quality_preset_name = args.value_of("quality").unwrap_or("default");
+    let quality = arrt::quality::get_preset(quality_preset_name);
 
     // Load materials
     let materials = MaterialBank::load_from_file(MATERIALS_FILE);
@@ -105,10 +105,13 @@ fn main() {
     // Setup rng seed
     let rng_seed: u64 = args.occurrences_of("seed");
 
+    // Setup camera
+    let camera = Camera::new(CAMERA_POSITION, CAMERA_LOOKAT, CAMERA_FOV);
+
     // Setup job
     let debug_normals = args.is_present("debug-normals");
     let debug_heatmap = args.is_present("debug-heatmap");
-    let mut job = Job::new(&quality, &materials, rng_seed, debug_normals, debug_heatmap);
+    let mut job = Job::new(&quality, &materials, rng_seed, camera, debug_normals, debug_heatmap);
 
     // Draw scene
     draw_scene(&mut job);
@@ -125,7 +128,7 @@ fn main() {
     println!("====================================================");
     println!("     Output: {}", output_filename);
     println!("       Seed: {}", rng_seed);
-    println!("    Quality: {}", quality_preset);
+    println!("    Quality: {}", quality_preset_name);
     println!(" Total time: {:.2} seconds", (timer_end - timer_begin));
     println!("====================================================");
 
@@ -135,6 +138,8 @@ fn main() {
         quality.image_width as f64,
         quality.image_height as f64,
     );
+
+    // Main loop
     window.update_buffer(&job.image_buffer);
     window.persist();
 }
@@ -152,8 +157,7 @@ fn draw_scene(job: &mut Job) {
     // Setup camera
     let image_width = job.quality.image_width;
     let image_height = job.quality.image_height;
-    let camera = Camera::new(CAMERA_POSITION, CAMERA_LOOKAT, CAMERA_FOV);
-    let tracer = Tracer::new(&camera, image_width, image_height);
+    let tracer = Tracer::new(&job.camera, image_width, image_height);
 
     // Generate random sampling offsets
     let additional_samples: usize = job.quality.samples_per_pixel - 1;

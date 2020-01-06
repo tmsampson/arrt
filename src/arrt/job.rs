@@ -2,6 +2,7 @@
 
 use super::material::MaterialBank;
 use super::quality::QualityPreset;
+use super::camera::Camera;
 
 // -----------------------------------------------------------------------------------------
 
@@ -18,6 +19,7 @@ pub struct Job<'a> {
     pub materials: &'a MaterialBank,
     pub image_buffer: ImageBuffer,
     pub rng: StdRng,
+    pub camera: Camera,
     pub debug_normals: bool,
     pub debug_heatmap: bool,
 }
@@ -29,6 +31,7 @@ impl<'a> Job<'a> {
         quality: &'a QualityPreset,
         materials: &'a MaterialBank,
         rng_seed: u64,
+        camera: Camera,
         debug_normals: bool,
         debug_heatmap: bool,
     ) -> Job<'a> {
@@ -46,6 +49,7 @@ impl<'a> Job<'a> {
             materials: &materials,
             image_buffer: image_buffer,
             rng,
+            camera,
             debug_normals,
             debug_heatmap
         }
