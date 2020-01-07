@@ -16,6 +16,8 @@ use arrt::vector::Vec3;
 // -----------------------------------------------------------------------------------------
 // External dependencies
 use rand::prelude::*;
+use winit::VirtualKeyCode;
+use winit::MouseButton;
 
 // -----------------------------------------------------------------------------------------
 // Config
@@ -89,9 +91,6 @@ const SCENE_SPHERES: [Sphere; 3] = [
 // -----------------------------------------------------------------------------------------
 
 fn main() {
-    // Start timer
-    let timer_begin = time::precise_time_s();
-
     // Parse command line args
     let args = command_line::parse();
 
@@ -111,13 +110,67 @@ fn main() {
     // Setup job
     let debug_normals = args.is_present("debug-normals");
     let debug_heatmap = args.is_present("debug-heatmap");
-    let mut job = Job::new(&quality, &materials, rng_seed, camera, debug_normals, debug_heatmap);
+    let mut job = Job::new(quality, materials, rng_seed, camera, debug_normals, debug_heatmap);
+
+    // Run
+    let is_interactive = args.is_present("interactive");
+    if is_interactive
+    {
+        run_interactive(&mut job);
+    }
+    else
+    {
+        let output_filename = args.value_of("output-file").unwrap_or("output.bmp");
+        run_headless(&mut job, output_filename);
+    }
+}
+
+// -----------------------------------------------------------------------------------------
+
+fn run_interactive(job : &mut Job)
+{
+    // Create window
+    let mut window = mini_gl_fb::gotta_go_fast(
+        "ARRT: Another Rust Ray Tracer",
+        job.quality.image_width as f64,
+        job.quality.image_height as f64,
+    );
+
+    // Pump message loop
+    window.glutin_handle_basic_input(|window, input| {
+        // Quit
+        if input.key_is_down(VirtualKeyCode::Escape) {
+            return false;
+        }
+
+        // Move forwards
+        if input.mouse_is_down(MouseButton::Left) {
+            job.camera.position.z += 1.0;
+        }
+
+        // Move backwards
+        if input.mouse_is_down(MouseButton::Right) {
+            job.camera.position.z -= 1.0;
+        }
+
+        // Redraw
+        draw_scene(job);
+        window.update_buffer(&job.image_buffer);
+        true
+    });
+}
+
+// -----------------------------------------------------------------------------------------
+
+fn run_headless(job : &mut Job, output_filename : &str)
+{
+    // Start timer
+    let timer_begin = time::precise_time_s();
 
     // Draw scene
-    draw_scene(&mut job);
+    draw_scene(job);
 
-    // Save image?
-    let output_filename = args.value_of("output-file").unwrap_or("output.bmp");
+    // Save image
     job.save_image(output_filename);
 
     // Stop timer and report
@@ -127,21 +180,10 @@ fn main() {
     println!(" SUMMARY");
     println!("====================================================");
     println!("     Output: {}", output_filename);
-    println!("       Seed: {}", rng_seed);
-    println!("    Quality: {}", quality_preset_name);
+    println!("       Seed: {}", job.rng_seed);
+    println!("    Quality: {}", job.quality.name);
     println!(" Total time: {:.2} seconds", (timer_end - timer_begin));
     println!("====================================================");
-
-    // Show window
-    let mut window = mini_gl_fb::gotta_go_fast(
-        "ARRT: Another Rust Ray Tracer",
-        quality.image_width as f64,
-        quality.image_height as f64,
-    );
-
-    // Main loop
-    window.update_buffer(&job.image_buffer);
-    window.persist();
 }
 
 // -----------------------------------------------------------------------------------------

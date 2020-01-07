@@ -67,7 +67,7 @@
 			"label": "Rust: cargo run [debug]",
 			"group": "build",
 			"type": "shell",
-			"command": "cargo run -- --quality=${input:qualityPicker} ${input:debugPicker}",
+			"command": "cargo run -- --quality=${input:qualityPicker} ${input:debugPicker} ${input:modePicker}",
 			"options": {
 				"cwd": "${workspaceFolder}"
 			},
@@ -82,7 +82,7 @@
 			"label": "Rust: cargo run [release]",
 			"group": "build",
 			"type": "shell",
-			"command": "cargo run --release -- --quality=${input:qualityPicker} ${input:debugPicker}",
+			"command": "cargo run --release -- --quality=${input:qualityPicker} ${input:debugPicker} ${input:modePicker}",
 			"options": {
 				"cwd": "${workspaceFolder}"
 			},
@@ -108,6 +108,13 @@
 			"default": "",
 			"type": "pickString",
 			"options": ["", "--debug-normals", "--debug-heatmap"]
+		},
+		{
+			"id": "modePicker",
+			"description": "Please select a mode",
+			"default": "",
+			"type": "pickString",
+			"options": ["", "--interactive"]
 		}
 	],
 }

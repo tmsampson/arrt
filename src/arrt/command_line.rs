@@ -41,6 +41,12 @@ pub fn parse<'a>() -> clap::ArgMatches<'a> {
                 .takes_value(false)
                 .help("Debug render heatmp"),
         )
+        .arg(
+            Arg::with_name("interactive")
+                .long("interactive")
+                .takes_value(false)
+                .help("Run in interactive mode"),
+        )
         .get_matches()
 }
 

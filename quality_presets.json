@@ -1,9 +1,9 @@
 {
 	"lowest": {
-		"image_width": 320,
-		"image_height": 240,
+		"image_width": 640,
+		"image_height": 480,
 		"samples_per_pixel": 1,
-		"max_bounces": 4
+		"max_bounces": 2
 	},
 	"low": {
 		"image_width": 640,

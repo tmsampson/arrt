@@ -14,10 +14,11 @@ type ImageBuffer = std::vec::Vec<[u8; 4]>;
 
 // -----------------------------------------------------------------------------------------
 
-pub struct Job<'a> {
-    pub quality: &'a QualityPreset,
-    pub materials: &'a MaterialBank,
+pub struct Job {
+    pub quality: QualityPreset,
+    pub materials: MaterialBank,
     pub image_buffer: ImageBuffer,
+    pub rng_seed: u64,
     pub rng: StdRng,
     pub camera: Camera,
     pub debug_normals: bool,
@@ -26,15 +27,15 @@ pub struct Job<'a> {
 
 // -----------------------------------------------------------------------------------------
 
-impl<'a> Job<'a> {
+impl Job {
     pub fn new(
-        quality: &'a QualityPreset,
-        materials: &'a MaterialBank,
+        quality: QualityPreset,
+        materials: MaterialBank,
         rng_seed: u64,
         camera: Camera,
         debug_normals: bool,
         debug_heatmap: bool,
-    ) -> Job<'a> {
+    ) -> Job {
         // Setup image buffer
         let pixel_count = quality.image_width * quality.image_height;
         let clear_colour = [0u8, 0u8, 0u8, 255u8];
@@ -45,9 +46,10 @@ impl<'a> Job<'a> {
 
         // Setup job
         Job {
-            quality: &quality,
-            materials: &materials,
+            quality: quality,
+            materials: materials,
             image_buffer: image_buffer,
+            rng_seed,
             rng,
             camera,
             debug_normals,
