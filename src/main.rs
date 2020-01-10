@@ -15,9 +15,12 @@ use arrt::vector::Vec3;
 
 // -----------------------------------------------------------------------------------------
 // External dependencies
+use hotwatch::{Event, Hotwatch};
 use rand::prelude::*;
-use winit::VirtualKeyCode;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 use winit::MouseButton;
+use winit::VirtualKeyCode;
 
 // -----------------------------------------------------------------------------------------
 // Config
@@ -110,16 +113,20 @@ fn main() {
     // Setup job
     let debug_normals = args.is_present("debug-normals");
     let debug_heatmap = args.is_present("debug-heatmap");
-    let mut job = Job::new(quality, materials, rng_seed, camera, debug_normals, debug_heatmap);
+    let mut job = Job::new(
+        quality,
+        materials,
+        rng_seed,
+        camera,
+        debug_normals,
+        debug_heatmap,
+    );
 
     // Run
     let is_interactive = args.is_present("interactive");
-    if is_interactive
-    {
+    if is_interactive {
         run_interactive(&mut job);
-    }
-    else
-    {
+    } else {
         let output_filename = args.value_of("output-file").unwrap_or("output.bmp");
         run_headless(&mut job, output_filename);
     }
@@ -127,8 +134,7 @@ fn main() {
 
 // -----------------------------------------------------------------------------------------
 
-fn run_interactive(job : &mut Job)
-{
+fn run_interactive(job: &mut Job) {
     // Create window
     let mut window = mini_gl_fb::gotta_go_fast(
         "ARRT: Another Rust Ray Tracer",
@@ -136,10 +142,23 @@ fn run_interactive(job : &mut Job)
         job.quality.image_height as f64,
     );
 
+    // Start listening for data file changes
+    let mut watcher = Hotwatch::new().expect("File watcher failed to initialize!");
+    let reload_materials_flag = Arc::new(AtomicBool::new(false));
+    watch_file(&mut watcher, MATERIALS_FILE, &reload_materials_flag);
+
     // Pump message loop
-    window.glutin_handle_basic_input(|window, input| {
+    let reload_flag_consume = Arc::clone(&reload_materials_flag);
+    window.glutin_handle_basic_input(move |window, input| {
+        // Update
+        if reload_flag_consume.load(Ordering::Relaxed) {
+            reload_flag_consume.swap(false, Ordering::Relaxed);
+            job.materials = MaterialBank::load_from_file(MATERIALS_FILE);
+        }
+
         // Quit
         if input.key_is_down(VirtualKeyCode::Escape) {
+            println!("WANT QUIT");
             return false;
         }
 
@@ -162,8 +181,7 @@ fn run_interactive(job : &mut Job)
 
 // -----------------------------------------------------------------------------------------
 
-fn run_headless(job : &mut Job, output_filename : &str)
-{
+fn run_headless(job: &mut Job, output_filename: &str) {
     // Start timer
     let timer_begin = time::precise_time_s();
 
@@ -258,7 +276,8 @@ fn draw_scene(job: &mut Job) {
 
             // Draw heatmap?
             if job.debug_heatmap {
-                let heat = (bounces_per_pixel as f32 / job.quality.samples_per_pixel as f32) / job.quality.max_bounces as f32;
+                let heat = (bounces_per_pixel as f32 / job.quality.samples_per_pixel as f32)
+                    / job.quality.max_bounces as f32;
                 colour = Vec3::lerp(Vec3::GREEN, Vec3::RED, heat);
             }
 
@@ -355,6 +374,17 @@ fn sample_scene_spheres(ray: &Ray) -> RayHitResult {
 
 fn sample_scene_planes(ray: &Ray) -> RayHitResult {
     arrt::intersect::ray_plane(&ray, &FLOOR_PLANE)
+}
+
+// -----------------------------------------------------------------------------------------
+
+fn watch_file(watcher: &mut hotwatch::Hotwatch, file: &str, flag: &Arc<AtomicBool>) {
+    let flag_shared = Arc::clone(&flag);
+    watcher
+        .watch(file, move |_event: Event| {
+            flag_shared.swap(true, Ordering::Relaxed);
+        })
+        .expect("Failed to watch file!");
 }
 
 // -----------------------------------------------------------------------------------------
