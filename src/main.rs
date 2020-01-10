@@ -7,6 +7,7 @@ use arrt::command_line;
 use arrt::geometry::Plane;
 use arrt::geometry::Sphere;
 use arrt::job::Job;
+use arrt::quality::QualityPresetBank;
 use arrt::material::MaterialBank;
 use arrt::misc::StringLiteral;
 use arrt::ray::Ray;
@@ -25,6 +26,7 @@ use winit::VirtualKeyCode;
 // -----------------------------------------------------------------------------------------
 // Config
 const PROGRESS_UPDATE_INTERVAL: f64 = 1.0;
+const QUALITY_PRESETS_FILE: StringLiteral = "quality_presets.json";
 const MATERIALS_FILE: StringLiteral = "materials.json";
 
 // -----------------------------------------------------------------------------------------
@@ -98,8 +100,9 @@ fn main() {
     let args = command_line::parse();
 
     // Load quality presets
+    let quality_presets = QualityPresetBank::load_from_file(QUALITY_PRESETS_FILE);
     let quality_preset_name = args.value_of("quality").unwrap_or("default");
-    let quality = arrt::quality::get_preset(quality_preset_name);
+    let quality = quality_presets.get(quality_preset_name);
 
     // Load materials
     let materials = MaterialBank::load_from_file(MATERIALS_FILE);
@@ -136,7 +139,7 @@ fn main() {
 
 fn run_interactive(job: &mut Job) {
     // Create window
-    let mut window = mini_gl_fb::gotta_go_fast(
+    let mut window_handle = mini_gl_fb::gotta_go_fast(
         "ARRT: Another Rust Ray Tracer",
         job.quality.image_width as f64,
         job.quality.image_height as f64,
@@ -145,20 +148,31 @@ fn run_interactive(job: &mut Job) {
     // Start listening for data file changes
     let mut watcher = Hotwatch::new().expect("File watcher failed to initialize!");
     let reload_materials_flag = Arc::new(AtomicBool::new(false));
+    let reload_quality_flag = Arc::new(AtomicBool::new(false));
     watch_file(&mut watcher, MATERIALS_FILE, &reload_materials_flag);
+    watch_file(&mut watcher, QUALITY_PRESETS_FILE, &reload_quality_flag);
 
     // Pump message loop
-    let reload_flag_consume = Arc::clone(&reload_materials_flag);
-    window.glutin_handle_basic_input(move |window, input| {
-        // Update
-        if reload_flag_consume.load(Ordering::Relaxed) {
-            reload_flag_consume.swap(false, Ordering::Relaxed);
+    let reload_materials_flag_consume = Arc::clone(&reload_materials_flag);
+    let reload_quality_flag_consume = Arc::clone(&reload_quality_flag);
+    window_handle.glutin_handle_basic_input(move |window, input| {
+        // Live update materials?
+        if reload_materials_flag_consume.load(Ordering::Relaxed) {
+            reload_materials_flag_consume.swap(false, Ordering::Relaxed);
+            println!("Reloading materials");
             job.materials = MaterialBank::load_from_file(MATERIALS_FILE);
+        }
+
+        // Live update quality?
+        if reload_quality_flag_consume.load(Ordering::Relaxed) {
+            reload_quality_flag_consume.swap(false, Ordering::Relaxed);
+            println!("Reloading quality presets");
+            let quality_presets = QualityPresetBank::load_from_file(QUALITY_PRESETS_FILE);
+            job.quality = quality_presets.get(&job.quality.name);
         }
 
         // Quit
         if input.key_is_down(VirtualKeyCode::Escape) {
-            println!("WANT QUIT");
             return false;
         }
 
@@ -381,8 +395,10 @@ fn sample_scene_planes(ray: &Ray) -> RayHitResult {
 fn watch_file(watcher: &mut hotwatch::Hotwatch, file: &str, flag: &Arc<AtomicBool>) {
     let flag_shared = Arc::clone(&flag);
     watcher
-        .watch(file, move |_event: Event| {
-            flag_shared.swap(true, Ordering::Relaxed);
+        .watch(file, move | event: Event| {
+            if let Event::Write(_path) = event {
+                flag_shared.swap(true, Ordering::Relaxed);
+            }
         })
         .expect("Failed to watch file!");
 }

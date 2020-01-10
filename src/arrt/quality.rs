@@ -6,10 +6,6 @@ use std::fs;
 
 // -----------------------------------------------------------------------------------------
 
-const QUALITY_PRESETS_FILE: super::misc::StringLiteral = "quality_presets.json";
-
-// -----------------------------------------------------------------------------------------
-
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct QualityPreset {
     #[serde(default)]
@@ -26,43 +22,62 @@ type QualityPresetTable = HashMap<String, QualityPreset>;
 
 // -----------------------------------------------------------------------------------------
 
-fn get_default_preset() -> QualityPreset {
-    QualityPreset {
-        name: String::from("default"),
-        image_width: 640,
-        image_height: 480,
-        samples_per_pixel: 16,
-        max_bounces: 16,
-    }
+pub struct QualityPresetBank {
+    _name: String,
+    presets: QualityPresetTable,
 }
 
 // -----------------------------------------------------------------------------------------
 
-pub fn get_preset(name: &str) -> QualityPreset {
-    // Load presets file
-    let data = fs::read_to_string(QUALITY_PRESETS_FILE).expect(&format!(
-        "ERROR: Could not load quality presets file: '{}'",
-        QUALITY_PRESETS_FILE
-    ));
+impl QualityPresetBank
+{
+     // -------------------------------------------------------------------------------------
 
-    // Parse presets file
-    let presets: QualityPresetTable = serde_json::from_str(&data).unwrap();
+     pub fn load_from_file(file: &str) -> QualityPresetBank {
+        // Load material bank file
+        let data = fs::read_to_string(file)
+            .expect(&format!("ERROR: Could not load quality presets file: '{}'", file));
 
-    // Find preset by name (or return default)
-    match presets.get(name) {
-        Some(preset) => {
-            let mut result = preset.clone();
-            result.name = String::from(name); // Use map key as name
-            result
+        // Deserialise
+        let mut presets: QualityPresetTable = serde_json::from_str(&data).unwrap();
+
+        // Use JSON key names as preset names
+        for (key, value) in &mut presets {
+            value.name = key.clone();
         }
-        None => {
-            println!(
-                "WARNING: Failed to find quality preset: '{}', using 'default' instead",
-                name
-            );
-            get_default_preset()
+
+        // Return bank
+        QualityPresetBank {
+            _name: String::from(file),
+            presets,
         }
     }
+
+    // -----------------------------------------------------------------------------------------
+
+    pub fn get(&self, name: &str) -> QualityPreset {
+        match self.presets.get(name) {
+            Some(preset) => preset.clone(),
+            None => {
+                println!("Failed to find preset: {}", name);
+                QualityPresetBank::get_default()
+            }
+        }
+    }
+
+    // -------------------------------------------------------------------------------------
+
+    pub fn get_default() -> QualityPreset {
+        QualityPreset {
+            name: String::from("default"),
+            image_width: 640,
+            image_height: 480,
+            samples_per_pixel: 8,
+            max_bounces: 8,
+        }
+    }
+
+    // -------------------------------------------------------------------------------------
 }
 
 // -----------------------------------------------------------------------------------------
