@@ -1,8 +1,8 @@
 // -----------------------------------------------------------------------------------------
 
+use super::camera::Camera;
 use super::material::MaterialBank;
 use super::quality::QualityPreset;
-use super::camera::Camera;
 
 // -----------------------------------------------------------------------------------------
 
@@ -53,7 +53,7 @@ impl Job {
             rng,
             camera,
             debug_normals,
-            debug_heatmap
+            debug_heatmap,
         }
     }
 

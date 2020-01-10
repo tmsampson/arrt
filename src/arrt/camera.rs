@@ -38,9 +38,9 @@ impl Camera {
 // -----------------------------------------------------------------------------------------
 // Tracer
 pub struct Tracer {
-    eye: Vec3,           // Camera position
-    near_origin: Vec3,   // Bottom-left of furstum near-plane
-    pixel_size: f32,     // World space
+    eye: Vec3,         // Camera position
+    near_origin: Vec3, // Bottom-left of furstum near-plane
+    pixel_size: f32,   // World space
     frustum_right: Vec3,
     frustum_up: Vec3,
 }
