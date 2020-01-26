@@ -7,9 +7,9 @@ use arrt::command_line;
 use arrt::geometry::Plane;
 use arrt::geometry::Sphere;
 use arrt::job::Job;
-use arrt::quality::QualityPresetBank;
 use arrt::material::MaterialBank;
 use arrt::misc::StringLiteral;
+use arrt::quality::QualityPresetBank;
 use arrt::ray::Ray;
 use arrt::ray::RayHitResult;
 use arrt::vector::Vec3;
@@ -220,13 +220,6 @@ fn run_headless(job: &mut Job, output_filename: &str) {
 
 // -----------------------------------------------------------------------------------------
 
-fn sample_background(ray: &Ray) -> Vec3 {
-    let t = (ray.direction.y + 1.0) * 0.5;
-    Vec3::lerp(SKY_COLOUR_BOTTOM, SKY_COLOUR_TOP, t)
-}
-
-// -----------------------------------------------------------------------------------------
-
 fn draw_scene(job: &mut Job) {
     // Setup camera
     let image_width = job.quality.image_width;
@@ -325,6 +318,12 @@ fn sample_scene(ray: &Ray, job: &mut Job, bounces: &mut u32, max_bounces: u32) -
         result = plane_result;
     }
 
+    // Test against sdf
+    let sdf_result = sample_scene_sdf(ray);
+    if sdf_result.hit && sdf_result.distance < result.distance {
+        result = sdf_result;
+    }
+
     // Use background?
     if !result.hit {
         return sample_background(ray);
@@ -350,7 +349,7 @@ fn sample_scene(ray: &Ray, job: &mut Job, bounces: &mut u32, max_bounces: u32) -
         result.position + result.normal + (Vec3::random_point_in_unit_sphere(&mut job.rng) * 0.99)
     };
 
-    let reflected_ray_origin = result.position + (result.normal * 0.00001);
+    let reflected_ray_origin = result.position + (result.normal * 0.001);
     let refelcted_ray_direction = Vec3::normalize(refelcted_point - result.position);
     let reflected_ray = Ray::new(reflected_ray_origin, refelcted_ray_direction);
     if *bounces < max_bounces {
@@ -392,10 +391,46 @@ fn sample_scene_planes(ray: &Ray) -> RayHitResult {
 
 // -----------------------------------------------------------------------------------------
 
+fn sample_scene_sdf(ray: &Ray) -> RayHitResult {
+    let sphere_origin = Vec3::new(0.0, 9.5, 0.0);
+    let sphere_radius = 3.0;
+    let sphere_material = "orange";
+
+    let mut ray_pos = ray.origin;
+    const MAX_STEPS: u32 = 50;
+    for _x in 0..MAX_STEPS {
+        let sphere_dist = sdf_sphere(sphere_origin, sphere_radius, ray_pos);
+        if sphere_dist < 0.001 {
+            let normal = Vec3::normalize(ray_pos - sphere_origin);
+            let dist = Vec3::length(ray_pos - ray.origin);
+            return RayHitResult::new(true, dist, ray_pos, normal, sphere_material);
+        }
+        ray_pos += ray.direction * sphere_dist;
+    }
+    RayHitResult::NO_HIT
+}
+
+// -----------------------------------------------------------------------------------------
+
+fn sdf_sphere(origin: Vec3, radius: f32, sample: Vec3) -> f32 {
+    // https://iquilezles.org/www/articles/distfunctions/distfunctions.htm
+    let to_origin = origin - sample;
+    Vec3::length(to_origin) - radius
+}
+
+// -----------------------------------------------------------------------------------------
+
+fn sample_background(ray: &Ray) -> Vec3 {
+    let t = (ray.direction.y + 1.0) * 0.5;
+    Vec3::lerp(SKY_COLOUR_BOTTOM, SKY_COLOUR_TOP, t)
+}
+
+// -----------------------------------------------------------------------------------------
+
 fn watch_file(watcher: &mut hotwatch::Hotwatch, file: &str, flag: &Arc<AtomicBool>) {
     let flag_shared = Arc::clone(&flag);
     watcher
-        .watch(file, move | event: Event| {
+        .watch(file, move |event: Event| {
             if let Event::Write(_path) = event {
                 flag_shared.swap(true, Ordering::Relaxed);
             }
