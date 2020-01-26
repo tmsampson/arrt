@@ -1,56 +1,58 @@
 {
-	"red" : {
-		"diffuse" :
-		{
-			"x" : 1.0,
-			"y" : 0.0,
-			"z" : 0.0
+	"red": {
+		"diffuse": {
+			"x": 1.0,
+			"y": 0.0,
+			"z": 0.0
 		},
-		"absorbed" : 0.3
+		"absorbed": 0.3
 	},
-	"green" : {
-		"diffuse" :
-		{
-			"x" : 0.0,
-			"y" : 1.0,
-			"z" : 0.0
+	"green": {
+		"diffuse": {
+			"x": 0.0,
+			"y": 1.0,
+			"z": 0.0
 		},
-		"absorbed" : 0.3
+		"absorbed": 0.3
 	},
-	"blue" : {
-		"diffuse" :
-		{
-			"x" : 0.0,
-			"y" : 0.0,
-			"z" : 1.0
+	"blue": {
+		"diffuse": {
+			"x": 0.0,
+			"y": 0.0,
+			"z": 1.0
 		},
-		"absorbed" : 0.3
+		"absorbed": 0.3
 	},
-	"white" : {
-		"diffuse" :
-		{
-			"x" : 1.0,
-			"y" : 1.0,
-			"z" : 1.0
+	"orange": {
+		"diffuse": {
+			"x": 0.98,
+			"y": 0.72,
+			"z": 0.01
 		},
-		"absorbed" : 0.3
+		"absorbed": 0.1
 	},
-	"black" : {
-		"diffuse" :
-		{
-			"x" : 0.0,
-			"y" : 0.0,
-			"z" : 0.0
+	"white": {
+		"diffuse": {
+			"x": 1.0,
+			"y": 1.0,
+			"z": 1.0
 		},
-		"absorbed" : 0.3
+		"absorbed": 0.3
 	},
-	"mirror" : {
-		"diffuse" :
-		{
-			"x" : 1.0,
-			"y" : 1.0,
-			"z" : 1.0
+	"black": {
+		"diffuse": {
+			"x": 0.0,
+			"y": 0.0,
+			"z": 0.0
 		},
-		"absorbed" : 0.3
+		"absorbed": 0.3
+	},
+	"mirror": {
+		"diffuse": {
+			"x": 1.0,
+			"y": 1.0,
+			"z": 1.0
+		},
+		"absorbed": 0.3
 	}
 }
