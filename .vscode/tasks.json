@@ -94,27 +94,41 @@
 			}
 		}
 	],
-	"inputs":[
+	"inputs": [
 		{
 			"id": "qualityPicker",
 			"description": "Please select a quality",
 			"default": "low",
 			"type": "pickString",
-			"options": ["lowest", "low", "medium", "high", "highest"]
+			"options": [
+				"unlit",
+				"lowest",
+				"low",
+				"medium",
+				"high",
+				"highest"
+			]
 		},
 		{
 			"id": "debugPicker",
 			"description": "Please select a debug option",
 			"default": "",
 			"type": "pickString",
-			"options": ["", "--debug-normals", "--debug-heatmap"]
+			"options": [
+				"",
+				"--debug-normals",
+				"--debug-heatmap"
+			]
 		},
 		{
 			"id": "modePicker",
 			"description": "Please select a mode",
 			"default": "",
 			"type": "pickString",
-			"options": ["", "--interactive"]
+			"options": [
+				"",
+				"--interactive"
+			]
 		}
 	],
 }
