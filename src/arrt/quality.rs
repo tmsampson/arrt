@@ -29,14 +29,15 @@ pub struct QualityPresetBank {
 
 // -----------------------------------------------------------------------------------------
 
-impl QualityPresetBank
-{
-     // -------------------------------------------------------------------------------------
+impl QualityPresetBank {
+    // -------------------------------------------------------------------------------------
 
-     pub fn load_from_file(file: &str) -> QualityPresetBank {
+    pub fn load_from_file(file: &str) -> QualityPresetBank {
         // Load material bank file
-        let data = fs::read_to_string(file)
-            .expect(&format!("ERROR: Could not load quality presets file: '{}'", file));
+        let data = fs::read_to_string(file).expect(&format!(
+            "ERROR: Could not load quality presets file: '{}'",
+            file
+        ));
 
         // Deserialise
         let mut presets: QualityPresetTable = serde_json::from_str(&data).unwrap();
