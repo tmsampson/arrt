@@ -28,6 +28,7 @@ use winit::VirtualKeyCode;
 const PROGRESS_UPDATE_INTERVAL: f64 = 1.0;
 const QUALITY_PRESETS_FILE: StringLiteral = "quality_presets.json";
 const MATERIALS_FILE: StringLiteral = "materials.json";
+const EPSILON: f32 = 0.001;
 
 // -----------------------------------------------------------------------------------------
 // Config | Camera
@@ -349,7 +350,7 @@ fn sample_scene(ray: &Ray, job: &mut Job, bounces: &mut u32, max_bounces: u32) -
         result.position + result.normal + (Vec3::random_point_in_unit_sphere(&mut job.rng) * 0.99)
     };
 
-    let reflected_ray_origin = result.position + (result.normal * 0.001);
+    let reflected_ray_origin = result.position + (result.normal * EPSILON);
     let refelcted_ray_direction = Vec3::normalize(refelcted_point - result.position);
     let reflected_ray = Ray::new(reflected_ray_origin, refelcted_ray_direction);
     if *bounces < max_bounces {
@@ -400,7 +401,7 @@ fn sample_scene_sdf(ray: &Ray) -> RayHitResult {
     const MAX_STEPS: u32 = 50;
     for _x in 0..MAX_STEPS {
         let sphere_dist = sdf_sphere(sphere_origin, sphere_radius, ray_pos);
-        if sphere_dist < 0.001 {
+        if sphere_dist < EPSILON {
             let normal = Vec3::normalize(ray_pos - sphere_origin);
             let dist = Vec3::length(ray_pos - ray.origin);
             return RayHitResult::new(true, dist, ray_pos, normal, sphere_material);
