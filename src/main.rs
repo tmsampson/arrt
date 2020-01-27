@@ -127,12 +127,16 @@ fn main() {
     );
 
     // Run
-    let is_interactive = args.is_present("interactive");
-    if is_interactive {
-        run_interactive(&mut job);
-    } else {
-        let output_filename = args.value_of("output-file").unwrap_or("output.bmp");
-        run_headless(&mut job, output_filename);
+    let mode = args.value_of("mode").unwrap_or("interactive");
+    println!("mode = {}", mode);
+    match mode {
+        "interactive" => run_interactive(&mut job),
+        "headless" => 
+        {
+            let output_filename = args.value_of("output-file").unwrap_or("output.bmp");
+            run_headless(&mut job, output_filename);
+        }
+        _ => println!("Invalid mode")
     }
 }
 

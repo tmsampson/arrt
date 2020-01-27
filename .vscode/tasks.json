@@ -67,7 +67,7 @@
 			"label": "Rust: cargo run [debug]",
 			"group": "build",
 			"type": "shell",
-			"command": "cargo run -- --quality=${input:qualityPicker} ${input:debugPicker} ${input:modePicker}",
+			"command": "cargo run -- --quality=${input:qualityPicker} ${input:debugPicker} --mode=${input:modePicker}",
 			"options": {
 				"cwd": "${workspaceFolder}"
 			},
@@ -82,7 +82,7 @@
 			"label": "Rust: cargo run [release]",
 			"group": "build",
 			"type": "shell",
-			"command": "cargo run --release -- --quality=${input:qualityPicker} ${input:debugPicker} ${input:modePicker}",
+			"command": "cargo run --release -- --quality=${input:qualityPicker} ${input:debugPicker} --mode=${input:modePicker}",
 			"options": {
 				"cwd": "${workspaceFolder}"
 			},
@@ -123,11 +123,11 @@
 		{
 			"id": "modePicker",
 			"description": "Please select a mode",
-			"default": "",
+			"default": "interactive",
 			"type": "pickString",
 			"options": [
-				"",
-				"--interactive"
+				"interactive",
+				"headless"
 			]
 		}
 	],
