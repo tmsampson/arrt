@@ -29,18 +29,19 @@ const PROGRESS_UPDATE_INTERVAL: f64 = 1.0;
 const QUALITY_PRESETS_FILE: StringLiteral = "quality_presets.json";
 const MATERIALS_FILE: StringLiteral = "materials.json";
 const EPSILON: f32 = 0.001;
+const CAMERA_ROTATION_SPEED: f32 = 10.0;
 
 // -----------------------------------------------------------------------------------------
 // Config | Camera
 const CAMERA_FOV: f32 = 90.0;
 const CAMERA_POSITION: Vec3 = Vec3 {
     x: 0.0,
-    y: 10.0,
+    y: 6.0,
     z: -20.0,
 };
 const CAMERA_LOOKAT: Vec3 = Vec3 {
     x: 0.0,
-    y: 3.0,
+    y: 6.0,
     z: 0.0,
 };
 
@@ -131,12 +132,11 @@ fn main() {
     println!("mode = {}", mode);
     match mode {
         "interactive" => run_interactive(&mut job),
-        "headless" => 
-        {
+        "headless" => {
             let output_filename = args.value_of("output-file").unwrap_or("output.bmp");
             run_headless(&mut job, output_filename);
         }
-        _ => println!("Invalid mode")
+        _ => println!("Invalid mode"),
     }
 }
 
@@ -181,14 +181,39 @@ fn run_interactive(job: &mut Job) {
             return false;
         }
 
-        // Move forwards
-        if input.mouse_is_down(MouseButton::Left) {
-            job.camera.position.z += 1.0;
+        // Apply camera movement
+        const MOVEMENT_SPEED: f32 = 1.0;
+        if input.key_is_down(VirtualKeyCode::W) {
+            job.camera.position += job.camera.forward * MOVEMENT_SPEED; // Forwards
+        }
+        if input.key_is_down(VirtualKeyCode::S) {
+            job.camera.position -= job.camera.forward * MOVEMENT_SPEED; // Forwards
+        }
+        if input.key_is_down(VirtualKeyCode::A) {
+            job.camera.position -= job.camera.right * MOVEMENT_SPEED; // Left
+        }
+        if input.key_is_down(VirtualKeyCode::D) {
+            job.camera.position += job.camera.right * MOVEMENT_SPEED; // Right
         }
 
-        // Move backwards
-        if input.mouse_is_down(MouseButton::Right) {
-            job.camera.position.z -= 1.0;
+        // Apply camera yaw
+        let yaw_left = input.key_is_down(VirtualKeyCode::J);
+        let yaw_right = input.key_is_down(VirtualKeyCode::L);
+        if yaw_left || yaw_right
+        {
+            let angle = CAMERA_ROTATION_SPEED * if yaw_left { 1.0 } else { -1.0 };
+            job.camera.forward = Vec3::rotate_yaxis(job.camera.forward, angle);
+            job.camera.right = Vec3::cross(Vec3::UP, job.camera.forward);
+            job.camera.up = Vec3::cross(job.camera.forward, job.camera.right);
+        }
+
+        // Apply camera pitch
+        let pitch_up = input.key_is_down(VirtualKeyCode::I);
+        let pitch_down = input.key_is_down(VirtualKeyCode::K);
+        if pitch_up || pitch_down {
+            let angle = CAMERA_ROTATION_SPEED * if pitch_up { 1.0 } else { -1.0 };
+            job.camera.forward = Vec3::rotate(job.camera.forward, job.camera.right, angle);
+            job.camera.up = Vec3::cross(job.camera.forward, job.camera.right);
         }
 
         // Redraw
@@ -399,7 +424,7 @@ fn sample_scene_planes(ray: &Ray) -> RayHitResult {
 fn sample_scene_sdf(ray: &Ray) -> RayHitResult {
     let sphere_origin = Vec3::new(0.0, 9.5, 0.0);
     let sphere_radius = 3.0;
-    let sphere_material = "orange";
+    let sphere_material = "green";
 
     let mut ray_pos = ray.origin;
     const MAX_STEPS: u32 = 50;

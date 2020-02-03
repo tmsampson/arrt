@@ -1,5 +1,6 @@
 // -----------------------------------------------------------------------------------------
 
+use super::matrix::Mat4;
 use rand::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::ops;
@@ -187,6 +188,14 @@ impl Vec3 {
         a / length
     }
 
+    pub fn rotate(x: Vec3, axis: Vec3, angle: f32) -> Vec3 {
+        Mat4::make_rotation(axis, angle) * x
+    }
+
+    pub fn rotate_yaxis(x: Vec3, angle: f32) -> Vec3 {
+        Mat4::make_rotation_yaxis(angle) * x
+    }
+
     pub fn lerp(a: Vec3, b: Vec3, t: f32) -> Vec3 {
         let inv_t = 1.0 - t;
         Vec3::new(
@@ -205,11 +214,6 @@ impl Vec3 {
     pub fn reflect(incident: Vec3, normal: Vec3) -> Vec3 {
         incident - (normal * 2.0 * Vec3::dot(normal, incident))
     }
-
-    // pub fn refract(incident: Vec3, normal: Vec3, index : f32) -> Vec3
-    // {
-
-    // }
 }
 
 // -----------------------------------------------------------------------------------------
