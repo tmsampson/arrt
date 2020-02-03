@@ -17,7 +17,6 @@ use arrt::vector::Vec3;
 // -----------------------------------------------------------------------------------------
 // External dependencies
 use hotwatch::{Event, Hotwatch};
-use rand::prelude::*;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use winit::VirtualKeyCode;
@@ -156,7 +155,8 @@ fn run_interactive(job: &mut Job) {
     watch_file(&mut watcher, QUALITY_PRESETS_FILE, &reload_quality_flag);
 
     // Pump message loop
-    let (mut draw_time_acc_s, mut present_time_acc_s, mut fps_counter) = (0.0, 0.0, 0);
+    let (mut draw_time_acc_s, mut present_time_acc_s) = (0.0, 0.0);
+    let (mut frame_count, mut output_iteration) = (0, 0);
     let reload_materials_flag_consume = Arc::clone(&reload_materials_flag);
     let reload_quality_flag_consume = Arc::clone(&reload_quality_flag);
     window_handle.glutin_handle_basic_input(move |window, input| {
@@ -229,22 +229,23 @@ fn run_interactive(job: &mut Job) {
         let present_time_s = timer_present_end - timer_present_begin;
         draw_time_acc_s += draw_time_s;
         present_time_acc_s += present_time_s;
-        fps_counter += 1;
+        frame_count += 1;
 
         // Show profiling info
         let total_time = draw_time_acc_s + present_time_acc_s;
         if total_time > 1.0 {
-            let average_ms = (total_time / fps_counter as f64) * 1000.0;
-            let average_draw_ms = (draw_time_acc_s / fps_counter as f64) * 1000.0;
-            let average_present_ms = (present_time_acc_s / fps_counter as f64) * 1000.0;
+            let average_ms = (total_time / frame_count as f64) * 1000.0;
+            let average_draw_ms = (draw_time_acc_s / frame_count as f64) * 1000.0;
+            let average_present_ms = (present_time_acc_s / frame_count as f64) * 1000.0;
             let average_fps = 1000.0 / average_ms;
             println!(
-                "Average FPS = {:.2} | Average MS = {:.2}ms (Draw: {:.2}ms, Present: {:.2}ms)",
-                average_fps, average_ms, average_draw_ms, average_present_ms
+                "{}|{:.2}|{:.2}|{:.2}|{:.2}",
+                output_iteration, average_fps, average_ms, average_draw_ms, average_present_ms
             );
             draw_time_acc_s = 0.0;
             present_time_acc_s = 0.0;
-            fps_counter = 0;
+            frame_count = 0;
+            output_iteration += 1;
         }
         true
     });
@@ -278,60 +279,44 @@ fn run_headless(job: &mut Job, output_filename: &str) {
 // -----------------------------------------------------------------------------------------
 
 fn draw_scene(job: &mut Job) {
-    // Setup camera
+    // Setup state
     let image_width = job.quality.image_width;
     let image_height = job.quality.image_height;
-    let tracer = Tracer::new(&job.camera, image_width, image_height);
-
-    // Generate random sampling offsets
-    let additional_samples: usize = job.quality.samples_per_pixel - 1;
-    let mut sample_offsets_x = vec![0.0; additional_samples];
-    let mut sample_offsets_y = vec![0.0; additional_samples];
-    for sample_index in 0..additional_samples {
-        sample_offsets_x[sample_index] = job.rng.gen();
-        sample_offsets_y[sample_index] = job.rng.gen();
-    }
 
     // Setup regular progress updates
-    let mut last_progress_update = time::precise_time_s();
+    //let mut last_progress_update = time::precise_time_s();
 
     // For each scanline...
     let mut pixel = [0u8, 0u8, 0u8, 255u8];
     for pixel_y in 0..image_height {
-        let pixel_y_f = pixel_y as f32;
-
         // Show progress?
-        let now = time::precise_time_s();
-        let elapsed = now - last_progress_update;
-        if elapsed >= PROGRESS_UPDATE_INTERVAL {
-            let row = pixel_y + 1;
-            let percent = ((row as f32) / (image_height as f32)) * 100.0;
-            println!(
-                "Tracing: {:.2}% complete scanline {} / {}",
-                percent, row, image_height
-            );
-            last_progress_update = now;
-        }
+        // let now = time::precise_time_s();
+        // let elapsed = now - last_progress_update;
+        // if elapsed >= PROGRESS_UPDATE_INTERVAL {
+        //     let row = pixel_y + 1;
+        //     let percent = ((row as f32) / (image_height as f32)) * 100.0;
+        //     println!(
+        //         "Tracing: {:.2}% complete scanline {} / {}",
+        //         percent, row, image_height
+        //     );
+        //     last_progress_update = now;
+        // }
 
         // For each column
         for pixel_x in 0..image_width {
-            let pixel_x_f = pixel_x as f32;
+            let pixel_index = Tracer::get_pixel_index(
+                pixel_x,
+                pixel_y,
+                image_width,
+                job.quality.samples_per_pixel,
+            );
 
-            // Sample centroid
+            let mut colour = Vec3::BLACK;
             let mut bounces_per_pixel = 0;
-            let mut bounces = 0;
-            let ray_centroid = tracer.get_ray(pixel_x_f, pixel_y_f);
-            let mut colour =
-                sample_scene(&ray_centroid, job, &mut bounces, job.quality.max_bounces);
-            bounces_per_pixel += bounces;
-
-            // Take additional samples
-            for sample_index in 0..additional_samples {
+            for sample_index in 0..job.quality.samples_per_pixel {
                 let mut bounces = 0;
-                let offset_x = (sample_offsets_x[sample_index] - 0.5) * 0.99;
-                let offset_y = (sample_offsets_y[sample_index] - 0.5) * 0.99;
-                let ray = tracer.get_ray(pixel_x_f + offset_x, pixel_y_f + offset_y);
-                colour += sample_scene(&ray, job, &mut bounces, job.quality.max_bounces);
+                let ray = job.tracer.initial_rays[pixel_index + sample_index];
+                colour += sample_scene(&ray, job, &mut bounces);
                 bounces_per_pixel += bounces;
             }
 
@@ -357,7 +342,7 @@ fn draw_scene(job: &mut Job) {
 
 // -----------------------------------------------------------------------------------------
 
-fn sample_scene(ray: &Ray, job: &mut Job, bounces: &mut u32, max_bounces: u32) -> Vec3 {
+fn sample_scene(ray: &Ray, job: &mut Job, bounces: &mut u32) -> Vec3 {
     let mut result = RayHitResult::MAX_HIT;
 
     // Manage bounces
@@ -409,8 +394,8 @@ fn sample_scene(ray: &Ray, job: &mut Job, bounces: &mut u32, max_bounces: u32) -
     let reflected_ray_origin = result.position + (result.normal * EPSILON);
     let refelcted_ray_direction = Vec3::normalize(refelcted_point - result.position);
     let reflected_ray = Ray::new(reflected_ray_origin, refelcted_ray_direction);
-    if *bounces < max_bounces {
-        let bounce_sample = sample_scene(&reflected_ray, job, bounces, max_bounces);
+    if *bounces <= job.quality.max_bounces {
+        let bounce_sample = sample_scene(&reflected_ray, job, bounces);
         bounce_sample * material.diffuse * reflected
     } else {
         material.diffuse * reflected

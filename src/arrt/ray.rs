@@ -5,6 +5,7 @@ use super::vector::Vec3;
 
 // -----------------------------------------------------------------------------------------
 // Ray Type
+#[derive(Debug, Default, Copy, Clone)]
 pub struct Ray {
     pub origin: Vec3,
     pub direction: Vec3,
@@ -13,6 +14,11 @@ pub struct Ray {
 // -----------------------------------------------------------------------------------------
 // Ray Constructor
 impl Ray {
+    pub const FORWARD: Ray = Ray {
+        origin: Vec3::ZERO,
+        direction: Vec3::FORWARD,
+    };
+
     pub fn new(origin: Vec3, direction: Vec3) -> Ray {
         Ray { origin, direction }
     }

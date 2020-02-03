@@ -1,3 +1,9 @@
+ARRT Profling Ideas:
+  ✔ 1) Setup tracer once and store in job @done(20-02-03 22:05)
+  ✔ 2) Pre-calculate all initial rays (including additional samples) @done(20-02-03 22:05)
+  ☐ 3) Store raw colours in array then average final colour in tight loop
+  ☐ 4) Perform all Vec3::copy_to_pixel operations in tight loop
+
 ARRT Todo:
   ✔ Implement high-resolution timer + print key stats @done(19-08-05 19:18)
   ✔ Implement quality profiles @done(19-08-06 13:21)

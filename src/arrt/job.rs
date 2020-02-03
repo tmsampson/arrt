@@ -1,6 +1,7 @@
 // -----------------------------------------------------------------------------------------
 
 use super::camera::Camera;
+use super::camera::Tracer;
 use super::material::MaterialBank;
 use super::quality::QualityPreset;
 
@@ -21,6 +22,7 @@ pub struct Job {
     pub rng_seed: u64,
     pub rng: StdRng,
     pub camera: Camera,
+    pub tracer: Tracer,
     pub debug_normals: bool,
     pub debug_heatmap: bool,
 }
@@ -42,7 +44,16 @@ impl Job {
         let image_buffer = vec![clear_colour; pixel_count as usize];
 
         // Setup rng
-        let rng = SeedableRng::seed_from_u64(rng_seed);
+        let mut rng = SeedableRng::seed_from_u64(rng_seed);
+
+        // Setup tracer
+        let tracer = Tracer::new(
+            &camera,
+            &mut rng,
+            quality.image_width,
+            quality.image_height,
+            quality.samples_per_pixel,
+        );
 
         // Setup job
         Job {
@@ -52,6 +63,7 @@ impl Job {
             rng_seed,
             rng,
             camera,
+            tracer,
             debug_normals,
             debug_heatmap,
         }

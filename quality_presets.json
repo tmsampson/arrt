@@ -3,13 +3,13 @@
 		"image_width": 640,
 		"image_height": 480,
 		"samples_per_pixel": 1,
-		"max_bounces": 1
+		"max_bounces": 0
 	},
 	"lowest": {
 		"image_width": 640,
 		"image_height": 480,
 		"samples_per_pixel": 1,
-		"max_bounces": 2
+		"max_bounces": 1
 	},
 	"low": {
 		"image_width": 640,
