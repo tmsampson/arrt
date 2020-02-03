@@ -20,7 +20,6 @@ use hotwatch::{Event, Hotwatch};
 use rand::prelude::*;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-use winit::MouseButton;
 use winit::VirtualKeyCode;
 
 // -----------------------------------------------------------------------------------------
@@ -129,7 +128,6 @@ fn main() {
 
     // Run
     let mode = args.value_of("mode").unwrap_or("interactive");
-    println!("mode = {}", mode);
     match mode {
         "interactive" => run_interactive(&mut job),
         "headless" => {
@@ -158,6 +156,7 @@ fn run_interactive(job: &mut Job) {
     watch_file(&mut watcher, QUALITY_PRESETS_FILE, &reload_quality_flag);
 
     // Pump message loop
+    let (mut draw_time_acc_s, mut present_time_acc_s, mut fps_counter) = (0.0, 0.0, 0);
     let reload_materials_flag_consume = Arc::clone(&reload_materials_flag);
     let reload_quality_flag_consume = Arc::clone(&reload_quality_flag);
     window_handle.glutin_handle_basic_input(move |window, input| {
@@ -199,8 +198,7 @@ fn run_interactive(job: &mut Job) {
         // Apply camera yaw
         let yaw_left = input.key_is_down(VirtualKeyCode::J);
         let yaw_right = input.key_is_down(VirtualKeyCode::L);
-        if yaw_left || yaw_right
-        {
+        if yaw_left || yaw_right {
             let angle = CAMERA_ROTATION_SPEED * if yaw_left { 1.0 } else { -1.0 };
             job.camera.forward = Vec3::rotate_yaxis(job.camera.forward, angle);
             job.camera.right = Vec3::cross(Vec3::UP, job.camera.forward);
@@ -217,8 +215,37 @@ fn run_interactive(job: &mut Job) {
         }
 
         // Redraw
+        let timer_draw_begin = time::precise_time_s();
         draw_scene(job);
+        let timer_draw_end = time::precise_time_s();
+
+        // Present
+        let timer_present_begin = time::precise_time_s();
         window.update_buffer(&job.image_buffer);
+        let timer_present_end = time::precise_time_s();
+
+        // Update timer
+        let draw_time_s = timer_draw_end - timer_draw_begin;
+        let present_time_s = timer_present_end - timer_present_begin;
+        draw_time_acc_s += draw_time_s;
+        present_time_acc_s += present_time_s;
+        fps_counter += 1;
+
+        // Show profiling info
+        let total_time = draw_time_acc_s + present_time_acc_s;
+        if total_time > 1.0 {
+            let average_ms = (total_time / fps_counter as f64) * 1000.0;
+            let average_draw_ms = (draw_time_acc_s / fps_counter as f64) * 1000.0;
+            let average_present_ms = (present_time_acc_s / fps_counter as f64) * 1000.0;
+            let average_fps = 1000.0 / average_ms;
+            println!(
+                "Average FPS = {:.2} | Average MS = {:.2}ms (Draw: {:.2}ms, Present: {:.2}ms)",
+                average_fps, average_ms, average_draw_ms, average_present_ms
+            );
+            draw_time_acc_s = 0.0;
+            present_time_acc_s = 0.0;
+            fps_counter = 0;
+        }
         true
     });
 }
@@ -349,10 +376,10 @@ fn sample_scene(ray: &Ray, job: &mut Job, bounces: &mut u32, max_bounces: u32) -
     }
 
     // Test against sdf
-    let sdf_result = sample_scene_sdf(ray);
-    if sdf_result.hit && sdf_result.distance < result.distance {
-        result = sdf_result;
-    }
+    // let sdf_result = sample_scene_sdf(ray);
+    // if sdf_result.hit && sdf_result.distance < result.distance {
+    //     result = sdf_result;
+    // }
 
     // Use background?
     if !result.hit {
