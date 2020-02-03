@@ -4,6 +4,7 @@ pub mod geometry;
 pub mod intersect;
 pub mod job;
 pub mod material;
+pub mod matrix;
 pub mod misc;
 pub mod quality;
 pub mod ray;
