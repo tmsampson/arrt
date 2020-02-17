@@ -2,7 +2,6 @@
 // Arrt dependencies
 mod arrt;
 use arrt::camera::Camera;
-use arrt::camera::Tracer;
 use arrt::command_line;
 use arrt::geometry::Plane;
 use arrt::geometry::Sphere;
@@ -182,17 +181,22 @@ fn run_interactive(job: &mut Job) {
 
         // Apply camera movement
         const MOVEMENT_SPEED: f32 = 1.0;
+        let mut update_camera = false;
         if input.key_is_down(VirtualKeyCode::W) {
             job.camera.position += job.camera.forward * MOVEMENT_SPEED; // Forwards
+            update_camera = true;
         }
         if input.key_is_down(VirtualKeyCode::S) {
             job.camera.position -= job.camera.forward * MOVEMENT_SPEED; // Forwards
+            update_camera = true;
         }
         if input.key_is_down(VirtualKeyCode::A) {
             job.camera.position -= job.camera.right * MOVEMENT_SPEED; // Left
+            update_camera = true;
         }
         if input.key_is_down(VirtualKeyCode::D) {
             job.camera.position += job.camera.right * MOVEMENT_SPEED; // Right
+            update_camera = true;
         }
 
         // Apply camera yaw
@@ -203,6 +207,7 @@ fn run_interactive(job: &mut Job) {
             job.camera.forward = Vec3::rotate_yaxis(job.camera.forward, angle);
             job.camera.right = Vec3::cross(Vec3::UP, job.camera.forward);
             job.camera.up = Vec3::cross(job.camera.forward, job.camera.right);
+            update_camera = true;
         }
 
         // Apply camera pitch
@@ -212,6 +217,13 @@ fn run_interactive(job: &mut Job) {
             let angle = CAMERA_ROTATION_SPEED * if pitch_up { 1.0 } else { -1.0 };
             job.camera.forward = Vec3::rotate(job.camera.forward, job.camera.right, angle);
             job.camera.up = Vec3::cross(job.camera.forward, job.camera.right);
+            update_camera = true;
+        }
+
+        // Update camera
+        if(update_camera)
+        {
+            job.camera.update_cached_rays(job.quality.image_width, job.quality.image_height, job.quality.samples_per_pixel, &mut job.rng);
         }
 
         // Redraw
@@ -304,7 +316,7 @@ fn draw_scene(job: &mut Job) {
 
         // For each column
         for pixel_x in 0..image_width {
-            let pixel_index = Tracer::get_pixel_index(
+            let pixel_index = Camera::get_pixel_index(
                 pixel_x,
                 pixel_y,
                 image_width,
@@ -315,7 +327,7 @@ fn draw_scene(job: &mut Job) {
             let mut bounces_per_pixel = 0;
             for sample_index in 0..job.quality.samples_per_pixel {
                 let mut bounces = 0;
-                let ray = job.tracer.initial_rays[pixel_index + sample_index];
+                let ray = job.camera.cached_rays[pixel_index + sample_index];
                 colour += sample_scene(&ray, job, &mut bounces);
                 bounces_per_pixel += bounces;
             }
