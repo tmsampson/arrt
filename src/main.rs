@@ -221,14 +221,18 @@ fn run_interactive(job: &mut Job) {
         }
 
         // Update camera
-        if(update_camera)
-        {
-            job.camera.update_cached_rays(job.quality.image_width, job.quality.image_height, job.quality.samples_per_pixel, &mut job.rng);
+        if update_camera {
+            job.camera.update_cached_rays(
+                job.quality.image_width,
+                job.quality.image_height,
+                job.quality.samples_per_pixel,
+                &mut job.rng,
+            );
         }
 
         // Redraw
         let timer_draw_begin = time::precise_time_s();
-        draw_scene(job);
+        draw_scene(job, false);
         let timer_draw_end = time::precise_time_s();
 
         // Present
@@ -270,7 +274,7 @@ fn run_headless(job: &mut Job, output_filename: &str) {
     let timer_begin = time::precise_time_s();
 
     // Draw scene
-    draw_scene(job);
+    draw_scene(job, true);
 
     // Save image
     job.save_image(output_filename);
@@ -290,29 +294,35 @@ fn run_headless(job: &mut Job, output_filename: &str) {
 
 // -----------------------------------------------------------------------------------------
 
-fn draw_scene(job: &mut Job) {
+fn draw_scene(job: &mut Job, output_progress_updates: bool) {
     // Setup state
     let image_width = job.quality.image_width;
     let image_height = job.quality.image_height;
 
-    // Setup regular progress updates
-    //let mut last_progress_update = time::precise_time_s();
+    // Setup timer?
+    let mut last_progress_update = if output_progress_updates {
+        time::precise_time_s()
+    } else {
+        0.0
+    };
 
     // For each scanline...
     let mut pixel = [0u8, 0u8, 0u8, 255u8];
     for pixel_y in 0..image_height {
         // Show progress?
-        // let now = time::precise_time_s();
-        // let elapsed = now - last_progress_update;
-        // if elapsed >= PROGRESS_UPDATE_INTERVAL {
-        //     let row = pixel_y + 1;
-        //     let percent = ((row as f32) / (image_height as f32)) * 100.0;
-        //     println!(
-        //         "Tracing: {:.2}% complete scanline {} / {}",
-        //         percent, row, image_height
-        //     );
-        //     last_progress_update = now;
-        // }
+        if output_progress_updates {
+            let now = time::precise_time_s();
+            let elapsed = now - last_progress_update;
+            if elapsed >= PROGRESS_UPDATE_INTERVAL {
+                let row = pixel_y + 1;
+                let percent = ((row as f32) / (image_height as f32)) * 100.0;
+                println!(
+                    "Tracing: {:.2}% complete scanline {} / {}",
+                    percent, row, image_height
+                );
+                last_progress_update = now;
+            }
+        }
 
         // For each column
         for pixel_x in 0..image_width {
@@ -373,7 +383,7 @@ fn sample_scene(ray: &Ray, job: &mut Job, bounces: &mut u32) -> Vec3 {
     }
 
     // Test against sdf
-    // let sdf_result = sample_scene_sdf(ray);
+    // let sdf_result = _sample_scene_sdf(ray);
     // if sdf_result.hit && sdf_result.distance < result.distance {
     //     result = sdf_result;
     // }
@@ -445,7 +455,7 @@ fn sample_scene_planes(ray: &Ray) -> RayHitResult {
 
 // -----------------------------------------------------------------------------------------
 
-fn sample_scene_sdf(ray: &Ray) -> RayHitResult {
+fn _sample_scene_sdf(ray: &Ray) -> RayHitResult {
     let sphere_origin = Vec3::new(0.0, 9.5, 0.0);
     let sphere_radius = 3.0;
     let sphere_material = "green";
@@ -453,7 +463,7 @@ fn sample_scene_sdf(ray: &Ray) -> RayHitResult {
     let mut ray_pos = ray.origin;
     const MAX_STEPS: u32 = 50;
     for _x in 0..MAX_STEPS {
-        let sphere_dist = sdf_sphere(sphere_origin, sphere_radius, ray_pos);
+        let sphere_dist = _sdf_sphere(sphere_origin, sphere_radius, ray_pos);
         if sphere_dist < EPSILON {
             let normal = Vec3::normalize(ray_pos - sphere_origin);
             let dist = Vec3::length(ray_pos - ray.origin);
@@ -466,7 +476,7 @@ fn sample_scene_sdf(ray: &Ray) -> RayHitResult {
 
 // -----------------------------------------------------------------------------------------
 
-fn sdf_sphere(origin: Vec3, radius: f32, sample: Vec3) -> f32 {
+fn _sdf_sphere(origin: Vec3, radius: f32, sample: Vec3) -> f32 {
     // https://iquilezles.org/www/articles/distfunctions/distfunctions.htm
     let to_origin = origin - sample;
     Vec3::length(to_origin) - radius
