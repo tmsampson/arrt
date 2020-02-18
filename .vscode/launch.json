@@ -9,12 +9,12 @@
 			"type": "cppvsdbg",
 			"request": "launch",
 			"program": "${workspaceFolder}/target/debug/arrt.exe",
-			"args": ["--quality=lowest"],
+			"args": ["--quality=low", "--mode=interactive"],
 			"stopAtEntry": false,
 			"cwd": "${workspaceFolder}",
 			"environment": [],
 			"externalConsole": true,
-			"preLaunchTask": "Rust: cargo build"
+			"preLaunchTask": "Rust: cargo build [debug]"
 		}
 	]
 }
