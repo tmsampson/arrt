@@ -16,9 +16,14 @@ use arrt::vector::Vec3;
 // -----------------------------------------------------------------------------------------
 // External dependencies
 use hotwatch::{Event, Hotwatch};
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::sync::Arc;
 use winit::VirtualKeyCode;
+use std::sync::Mutex;
+use std::thread;
+use std::collections::VecDeque;
+use std::time::Duration;
+use num_cpus;
 
 // -----------------------------------------------------------------------------------------
 // Config
@@ -153,9 +158,38 @@ fn run_interactive(job: &mut Job) {
     watch_file(&mut watcher, MATERIALS_FILE, &reload_materials_flag);
     watch_file(&mut watcher, QUALITY_PRESETS_FILE, &reload_quality_flag);
 
+    // Threading
+    let movement_counter = Arc::new(AtomicU32::new(0));
+    let job_queue_arc = Arc::new(Mutex::new(VecDeque::<i32>::with_capacity(10)));
+    let thread_count = num_cpus::get();
+    for thread_index in 0..thread_count {
+        let job_queue_arc = job_queue_arc.clone();
+        // let mc = movement_counter.clone();
+        thread::spawn(move || {
+            loop
+            {
+                let mut job_queue = job_queue_arc.lock().unwrap();
+                if (*job_queue).len() > 0
+                {
+                    // mc.load(Ordering::SeqCst)
+                    let x = (*job_queue).pop_front().unwrap();
+                    drop(job_queue); // release lock
+                    println!("thread {} processing job = {}", thread_index, x);
+                }
+                else
+                {
+                    // (*job_queue).push_back(2);// schedule next bounce
+                    drop(job_queue); // release lock
+                    println!("thread {} starved", thread_index);
+                    thread::sleep(Duration::from_millis(100));
+                }
+            }
+        });
+    }
+
     // Pump message loop
     let (mut draw_time_acc_s, mut present_time_acc_s) = (0.0, 0.0);
-    let (mut frame_count, mut output_iteration) = (0, 0);
+    let (mut frame_count, mut total_frame_count, mut output_iteration) = (0, 0, 0);
     let reload_materials_flag_consume = Arc::clone(&reload_materials_flag);
     let reload_quality_flag_consume = Arc::clone(&reload_quality_flag);
     window_handle.glutin_handle_basic_input(move |window, input| {
@@ -228,6 +262,7 @@ fn run_interactive(job: &mut Job) {
                 job.quality.samples_per_pixel,
                 &mut job.rng,
             );
+            movement_counter.fetch_add(1, Ordering::SeqCst);
         }
 
         // Redraw
@@ -246,6 +281,11 @@ fn run_interactive(job: &mut Job) {
         draw_time_acc_s += draw_time_s;
         present_time_acc_s += present_time_s;
         frame_count += 1;
+        total_frame_count +=1;
+
+        // Threading
+        let mut job_queue = job_queue_arc.lock().unwrap();
+        job_queue.push_back(total_frame_count);
 
         // Show profiling info
         let total_time = draw_time_acc_s + present_time_acc_s;
