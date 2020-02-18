@@ -143,6 +143,17 @@ fn main() {
 
 // -----------------------------------------------------------------------------------------
 
+#[derive(Debug, Default, Copy, Clone)]
+pub struct RayJob {
+    pub pixel_index: usize,
+    pub sample_index: usize,
+    pub ray_index: usize,
+    pub bounce_index: u64,
+    pub ray: Ray,
+}
+
+// -----------------------------------------------------------------------------------------
+
 fn run_interactive(job: &mut Job) {
     // Create window
     let mut window_handle = mini_gl_fb::gotta_go_fast(
@@ -158,9 +169,34 @@ fn run_interactive(job: &mut Job) {
     watch_file(&mut watcher, MATERIALS_FILE, &reload_materials_flag);
     watch_file(&mut watcher, QUALITY_PRESETS_FILE, &reload_quality_flag);
 
+    // Schedule work
+    let (image_width, image_height) = (job.quality.image_width, job.quality.image_height);
+    let samples_per_pixel = job.quality.samples_per_pixel;
+    let total_pixel_count = image_height * image_width;
+    let total_ray_job_count = (total_pixel_count as usize) * samples_per_pixel;
+    let mut job_queue = VecDeque::<RayJob>::with_capacity(total_ray_job_count as usize);
+    for pixel_y in 0..image_height {
+        for pixel_x in 0..image_width {
+            let pixel_index = ((pixel_y * image_width) + pixel_x) as usize;
+            for sample_index in 0..samples_per_pixel {
+                let ray_index = ((pixel_index * samples_per_pixel) + sample_index) as usize;
+                let ray = job.camera.cached_rays[ray_index as usize];
+                let ray_job = RayJob
+                {
+                    pixel_index,
+                    sample_index,
+                    ray_index,
+                    ray,
+                    bounce_index: 0,
+                };
+                job_queue.push_back(ray_job);
+            }
+        }
+    }
+
     // Threading
     let movement_counter = Arc::new(AtomicU32::new(0));
-    let job_queue_arc = Arc::new(Mutex::new(VecDeque::<i32>::with_capacity(10)));
+    let job_queue_arc = Arc::new(Mutex::new(job_queue));
     let thread_count = num_cpus::get();
     for thread_index in 0..thread_count {
         let job_queue_arc = job_queue_arc.clone();
@@ -172,12 +208,13 @@ fn run_interactive(job: &mut Job) {
                 if (*job_queue).len() > 0
                 {
                     // mc.load(Ordering::SeqCst)
-                    let x = (*job_queue).pop_front().unwrap();
+                    let ray_job = (*job_queue).pop_front().unwrap();
                     drop(job_queue); // release lock
-                    println!("thread {} processing job = {}", thread_index, x);
+                    //println!("thread {} processing job = {}", thread_index, ray_job.ray_index);
                 }
                 else
                 {
+                    // TODO: wait on event here which is raised when camera moves!
                     // (*job_queue).push_back(2);// schedule next bounce
                     drop(job_queue); // release lock
                     println!("thread {} starved", thread_index);
@@ -284,8 +321,8 @@ fn run_interactive(job: &mut Job) {
         total_frame_count +=1;
 
         // Threading
-        let mut job_queue = job_queue_arc.lock().unwrap();
-        job_queue.push_back(total_frame_count);
+        let mut _job_queue = job_queue_arc.lock().unwrap();
+        //job_queue.push_back(total_frame_count);
 
         // Show profiling info
         let total_time = draw_time_acc_s + present_time_acc_s;
