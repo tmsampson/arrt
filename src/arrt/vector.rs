@@ -230,8 +230,8 @@ impl Vec3 {
 // Helpers
 impl Vec3 {
     #[allow(dead_code)]
-    pub fn print(a: Vec3, label: &str) {
-        println!("{} = [{:.2}, {:.2}, {:.2}]", label, a.x, a.y, a.z);
+    pub fn print(a: Vec3) {
+        println!("[{:.2}, {:.2}, {:.2}]", a.x, a.y, a.z);
     }
 
     pub fn random_point_in_unit_sphere(rng: &mut StdRng) -> Vec3 {

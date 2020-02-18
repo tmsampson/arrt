@@ -181,8 +181,8 @@ fn run_thread(
 
     loop {
         let mut job_queue = job_queue_arc.lock().unwrap();
-        if (*job_queue).len() > 0 {
-            let ray_job = (*job_queue).pop_front().unwrap();
+        if job_queue.len() > 0 {
+            let ray_job = job_queue.pop_front().unwrap();
             drop(job_queue); // release lock
             let ray = &ray_job.ray;
             let (colour, result) = sample_scene(ray, &job_arc);
@@ -195,11 +195,19 @@ fn run_thread(
                 bounce_index: ray_job.bounce_index,
                 colour,
             };
+            // println!(
+            //     "[THREAD] send: pixel_index = {} ray_index = {}, colour = {}, {}, {}",
+            //     job_result.pixel_index,
+            //     job_result.ray_index,
+            //     job_result.colour.x,
+            //     job_result.colour.y,
+            //     job_result.colour.z,
+            // );
             tx.send(job_result).unwrap();
 
             // Schedule bounce job?
-            let max_bounces = 16;
-            if result.hit && ray_job.bounce_index < max_bounces {
+            let max_bounces = 6000;
+            if result.hit && ray_job.bounce_index < (max_bounces - 1) {
                 // Calculate reflected point
                 let material = job_arc.materials.get(result.material_name);
                 let refelcted_point = if material.name == "mirror" {
@@ -228,7 +236,7 @@ fn run_thread(
             // TODO: wait on event here which is raised when camera moves!
             // (*job_queue).push_back(2);// schedule next bounce
             drop(job_queue); // release lock
-            println!("Thread {} starved", thread_index);
+                             //println!("Thread {} starved", thread_index);
             thread::sleep(Duration::from_millis(100));
         }
     }
@@ -249,9 +257,9 @@ fn schedule_work(
     job_queue.clear();
     for pixel_y in 0..image_height {
         for pixel_x in 0..image_width {
-            let pixel_index = ((pixel_y * image_width) + pixel_x) as usize;
+            let pixel_index = (((pixel_y * image_width) + pixel_x) as usize) * samples_per_pixel;
             for sample_index in 0..samples_per_pixel {
-                let ray_index = ((pixel_index * samples_per_pixel) + sample_index) as usize;
+                let ray_index = pixel_index + sample_index;
                 let ray = camera.cached_rays[ray_index as usize];
                 let ray_job = RayJob {
                     pixel_index,
@@ -303,7 +311,7 @@ fn run_interactive() {
     let samples_per_pixel = quality.samples_per_pixel;
     let job = Job::new(quality, materials, debug_normals, debug_heatmap);
 
-     // Setup image buffer
+    // Setup image buffer
     let total_pixel_count = image_height * image_width;
     let clear_colour = [0u8, 0u8, 0u8, 255u8];
     let mut image_buffer = vec![clear_colour; total_pixel_count as usize];
@@ -331,7 +339,6 @@ fn run_interactive() {
 
     // Schedule work
     let mut movement_counter = 0;
-    let total_pixel_count = image_height * image_width;
     let total_ray_job_count = (total_pixel_count as usize) * samples_per_pixel;
     let mut job_queue = JobQueue::with_capacity(total_ray_job_count as usize);
     schedule_work(
@@ -379,7 +386,16 @@ fn run_interactive() {
         // }
 
         // Receive results from threads
-        for result in rx.recv() {
+        let iter = rx.try_iter();
+        for result in iter {
+            // println!(
+            //     "[MAIN] rcv: pixel_index = {} ray_index = {}, colour = {}, {}, {}",
+            //     result.pixel_index,
+            //     result.ray_index,
+            //     result.colour.x,
+            //     result.colour.y,
+            //     result.colour.z
+            // );
             let first_result = result.bounce_index == 0;
             if first_result {
                 result_store[result.ray_index] = result.colour;
@@ -399,17 +415,22 @@ fn run_interactive() {
         for pixel_y in 0..image_height {
             for pixel_x in 0..image_width {
                 let mut average = Vec3::BLACK;
-                let pixel_index = ((pixel_y * image_width) + pixel_x) as usize;
+                let pixel_index =
+                    (((pixel_y * image_width) + pixel_x) as usize) * samples_per_pixel;
                 for sample_index in 0..samples_per_pixel {
-                    let ray_index = pixel_index;
+                    let ray_index = pixel_index + sample_index;
                     average += result_store[ray_index];
                 }
                 average /= samples_per_pixel as f32;
+                // println!(
+                //     "[MAIN] write: colour = {}, {}, {}",
+                //     average.x, average.y, average.z
+                // );
+                let pixel_index_2 = (((pixel_y * image_width) + pixel_x) as usize);
                 Vec3::copy_to_pixel(average, &mut pixel);
 
                 // Write pixel
-                let pixel_index = (pixel_y * image_width) + pixel_x;
-                image_buffer[pixel_index as usize] = pixel;
+                image_buffer[pixel_index_2 as usize] = pixel;
             }
         }
         // draw_scene(job, false);
@@ -507,7 +528,6 @@ fn run_interactive() {
                 movement_counter,
             );
         }
-        
         true
     });
 }
