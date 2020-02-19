@@ -33,7 +33,7 @@ const _PROGRESS_UPDATE_INTERVAL: f64 = 1.0;
 const QUALITY_PRESETS_FILE: StringLiteral = "quality_presets.json";
 const MATERIALS_FILE: StringLiteral = "materials.json";
 const EPSILON: f32 = 0.001;
-const CAMERA_ROTATION_SPEED: f32 = 10.0;
+const CAMERA_ROTATION_SPEED: f32 = 2.0;
 
 // -----------------------------------------------------------------------------------------
 // Config | Camera
@@ -154,8 +154,9 @@ pub struct RayJob {
     pub pixel_index: usize,
     pub sample_index: usize,
     pub ray_index: usize,
-    pub bounce_index: u64,
+    pub bounce_index: u32,
     pub ray: Ray,
+    pub max_bounces: u32,
     pub movement_counter: u64,
 }
 
@@ -164,7 +165,7 @@ pub struct RayJobResult {
     pub pixel_index: usize,
     pub sample_index: usize,
     pub ray_index: usize,
-    pub bounce_index: u64,
+    pub bounce_index: u32,
     pub colour: Vec3,
 }
 
@@ -206,8 +207,7 @@ fn run_thread(
             tx.send(job_result).unwrap();
 
             // Schedule bounce job?
-            let max_bounces = 6000;
-            if result.hit && ray_job.bounce_index < (max_bounces - 1) {
+            if result.hit && ((ray_job.bounce_index + 1) <= ray_job.max_bounces) {
                 // Calculate reflected point
                 let material = job_arc.materials.get(result.material_name);
                 let refelcted_point = if material.name == "mirror" {
@@ -250,6 +250,7 @@ fn schedule_work(
     image_width: u32,
     image_height: u32,
     samples_per_pixel: usize,
+    max_bounces: u32,
     camera: &Camera,
     job_queue: &mut JobQueue,
     movement_counter: u64,
@@ -268,6 +269,7 @@ fn schedule_work(
                         ray,
                         bounce_index: 0,
                         movement_counter,
+                        max_bounces,
                     };
                     job_queue.push_back(ray_job);
             }
@@ -309,6 +311,7 @@ fn run_interactive() {
     let debug_heatmap = args.is_present("debug-heatmap");
     let (image_width, image_height) = (quality.image_width, quality.image_height);
     let samples_per_pixel = quality.samples_per_pixel;
+    let max_bounces = quality.max_bounces;
     let job = Job::new(quality, materials, debug_normals, debug_heatmap);
 
     // Setup image buffer
@@ -345,9 +348,10 @@ fn run_interactive() {
         image_width,
         image_height,
         samples_per_pixel,
+        max_bounces,
         &camera,
         &mut job_queue,
-        movement_counter,
+        movement_counter
     );
 
     // Threading
@@ -391,7 +395,7 @@ fn run_interactive() {
         }
 
          // Apply camera movement
-         const MOVEMENT_SPEED: f32 = 1.0;
+         const MOVEMENT_SPEED: f32 = 0.2;
          let mut update_camera = false;
          if input.key_is_down(VirtualKeyCode::W) {
              camera.position += camera.forward * MOVEMENT_SPEED; // Forwards
@@ -453,6 +457,7 @@ fn run_interactive() {
                  image_width,
                  image_height,
                  samples_per_pixel,
+                 max_bounces,
                  &camera,
                  &mut job_queue,
                  movement_counter,
