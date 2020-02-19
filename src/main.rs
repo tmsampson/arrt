@@ -255,21 +255,21 @@ fn schedule_work(
     movement_counter: u64,
 ) {
     job_queue.clear();
-    for pixel_y in 0..image_height {
-        for pixel_x in 0..image_width {
-            let pixel_index = (((pixel_y * image_width) + pixel_x) as usize) * samples_per_pixel;
-            for sample_index in 0..samples_per_pixel {
-                let ray_index = pixel_index + sample_index;
-                let ray = camera.cached_rays[ray_index as usize];
-                let ray_job = RayJob {
-                    pixel_index,
-                    sample_index,
-                    ray_index,
-                    ray,
-                    bounce_index: 0,
-                    movement_counter,
-                };
-                job_queue.push_back(ray_job);
+    for sample_index in 0..samples_per_pixel {
+        for pixel_y in 0..image_height {
+            for pixel_x in 0..image_width {
+                let pixel_index = (((pixel_y * image_width) + pixel_x) as usize) * samples_per_pixel;
+                    let ray_index = pixel_index + sample_index;
+                    let ray = camera.cached_rays[ray_index as usize];
+                    let ray_job = RayJob {
+                        pixel_index,
+                        sample_index,
+                        ray_index,
+                        ray,
+                        bounce_index: 0,
+                        movement_counter,
+                    };
+                    job_queue.push_back(ray_job);
             }
         }
     }
@@ -385,9 +385,84 @@ fn run_interactive() {
         //     job.quality = quality_presets.get(&job.quality.name);
         // }
 
+        // Quit
+        if input.key_is_down(VirtualKeyCode::Escape) {
+            return false;
+        }
+
+         // Apply camera movement
+         const MOVEMENT_SPEED: f32 = 1.0;
+         let mut update_camera = false;
+         if input.key_is_down(VirtualKeyCode::W) {
+             camera.position += camera.forward * MOVEMENT_SPEED; // Forwards
+             update_camera = true;
+         }
+         if input.key_is_down(VirtualKeyCode::S) {
+             camera.position -= camera.forward * MOVEMENT_SPEED; // Forwards
+             update_camera = true;
+         }
+         if input.key_is_down(VirtualKeyCode::A) {
+             camera.position -= camera.right * MOVEMENT_SPEED; // Left
+             update_camera = true;
+         }
+         if input.key_is_down(VirtualKeyCode::D) {
+             camera.position += camera.right * MOVEMENT_SPEED; // Right
+             update_camera = true;
+         }
+ 
+         // Apply camera yaw
+         let yaw_left = input.key_is_down(VirtualKeyCode::J);
+         let yaw_right = input.key_is_down(VirtualKeyCode::L);
+         if yaw_left || yaw_right {
+             let angle = CAMERA_ROTATION_SPEED * if yaw_left { 1.0 } else { -1.0 };
+             camera.forward = Vec3::rotate_yaxis(camera.forward, angle);
+             camera.right = Vec3::cross(Vec3::UP, camera.forward);
+             camera.up = Vec3::cross(camera.forward, camera.right);
+             update_camera = true;
+         }
+ 
+         // Apply camera pitch
+         let pitch_up = input.key_is_down(VirtualKeyCode::I);
+         let pitch_down = input.key_is_down(VirtualKeyCode::K);
+         if pitch_up || pitch_down {
+             let angle = CAMERA_ROTATION_SPEED * if pitch_up { 1.0 } else { -1.0 };
+             camera.forward = Vec3::rotate(camera.forward, camera.right, angle);
+             camera.up = Vec3::cross(camera.forward, camera.right);
+             update_camera = true;
+         }
+ 
+         // Update camera
+         if update_camera {
+             camera.update_cached_rays(
+                 job.quality.image_width,
+                 job.quality.image_height,
+                 job.quality.samples_per_pixel,
+                 &mut rng,
+             );
+
+             // Clear results
+             for i in 0..result_store.len()
+             {
+                result_store[i] = Vec3::BLACK;
+             }
+ 
+             // Lock and re-schedule work
+             movement_counter = movement_counter + 1;
+             let mut job_queue = job_queue_arc.lock().unwrap();
+             schedule_work(
+                 image_width,
+                 image_height,
+                 samples_per_pixel,
+                 &camera,
+                 &mut job_queue,
+                 movement_counter,
+             );
+             return true;
+         }
+
         // Receive results from threads
         let iter = rx.try_iter();
-        for result in iter {
+        for result in iter.take((image_width * image_height) as usize) {
             // println!(
             //     "[MAIN] rcv: pixel_index = {} ray_index = {}, colour = {}, {}, {}",
             //     result.pixel_index,
@@ -403,12 +478,6 @@ fn run_interactive() {
                 result_store[result.ray_index] *= result.colour;
             }
         }
-
-        // Quit
-        if input.key_is_down(VirtualKeyCode::Escape) {
-            return false;
-        }
-
         // Redraw
         let timer_draw_begin = time::precise_time_s();
         let mut pixel = [0u8, 0u8, 0u8, 255u8];
@@ -464,69 +533,6 @@ fn run_interactive() {
             present_time_acc_s = 0.0;
             frame_count = 0;
             output_iteration += 1;
-        }
-
-        // Apply camera movement
-        const MOVEMENT_SPEED: f32 = 1.0;
-        let mut update_camera = false;
-        if input.key_is_down(VirtualKeyCode::W) {
-            camera.position += camera.forward * MOVEMENT_SPEED; // Forwards
-            update_camera = true;
-        }
-        if input.key_is_down(VirtualKeyCode::S) {
-            camera.position -= camera.forward * MOVEMENT_SPEED; // Forwards
-            update_camera = true;
-        }
-        if input.key_is_down(VirtualKeyCode::A) {
-            camera.position -= camera.right * MOVEMENT_SPEED; // Left
-            update_camera = true;
-        }
-        if input.key_is_down(VirtualKeyCode::D) {
-            camera.position += camera.right * MOVEMENT_SPEED; // Right
-            update_camera = true;
-        }
-
-        // Apply camera yaw
-        let yaw_left = input.key_is_down(VirtualKeyCode::J);
-        let yaw_right = input.key_is_down(VirtualKeyCode::L);
-        if yaw_left || yaw_right {
-            let angle = CAMERA_ROTATION_SPEED * if yaw_left { 1.0 } else { -1.0 };
-            camera.forward = Vec3::rotate_yaxis(camera.forward, angle);
-            camera.right = Vec3::cross(Vec3::UP, camera.forward);
-            camera.up = Vec3::cross(camera.forward, camera.right);
-            update_camera = true;
-        }
-
-        // Apply camera pitch
-        let pitch_up = input.key_is_down(VirtualKeyCode::I);
-        let pitch_down = input.key_is_down(VirtualKeyCode::K);
-        if pitch_up || pitch_down {
-            let angle = CAMERA_ROTATION_SPEED * if pitch_up { 1.0 } else { -1.0 };
-            camera.forward = Vec3::rotate(camera.forward, camera.right, angle);
-            camera.up = Vec3::cross(camera.forward, camera.right);
-            update_camera = true;
-        }
-
-        // Update camera
-        if update_camera {
-            camera.update_cached_rays(
-                job.quality.image_width,
-                job.quality.image_height,
-                job.quality.samples_per_pixel,
-                &mut rng,
-            );
-
-            // Lock and re-schedule work
-            movement_counter = movement_counter + 1;
-            let mut job_queue = job_queue_arc.lock().unwrap();
-            schedule_work(
-                image_width,
-                image_height,
-                samples_per_pixel,
-                &camera,
-                &mut job_queue,
-                movement_counter,
-            );
         }
         true
     });

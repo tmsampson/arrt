@@ -12,9 +12,9 @@
 		"max_bounces": 1
 	},
 	"low": {
-		"image_width": 440,
-		"image_height": 320,
-		"samples_per_pixel": 8,
+		"image_width": 640,
+		"image_height": 480,
+		"samples_per_pixel": 16,
 		"max_bounces": 3
 	},
 	"medium": {
