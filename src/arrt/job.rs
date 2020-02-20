@@ -34,26 +34,7 @@ impl Job {
         }
     }
 
-    pub fn save_image(&self, filename: &str) {
-        // Create bitmap
-        let mut output_bmp = bmp::Image::new(self.quality.image_width, self.quality.image_height);
-
-        // Copy image buffer to bitmap
-        // for x in 0..self.quality.image_width {
-        //     for y in 0..self.quality.image_height {
-        //         let pixel_index = ((self.quality.image_width * y) + x) as usize;
-        //         let pixel = bmp::Pixel {
-        //             r: self.image_buffer[pixel_index][0],
-        //             g: self.image_buffer[pixel_index][1],
-        //             b: self.image_buffer[pixel_index][2],
-        //         };
-        //         output_bmp.set_pixel(x, self.quality.image_height - y - 1, pixel);
-        //     }
-        // }
-
-        // Save bitmap
-        output_bmp.save(filename).expect("Failed");
-    }
+    
 }
 
 // -----------------------------------------------------------------------------------------

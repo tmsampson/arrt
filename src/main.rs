@@ -26,6 +26,13 @@ use std::sync::Mutex;
 use std::thread;
 use std::time::Duration;
 use winit::VirtualKeyCode;
+use guid_create::GUID;
+
+// -----------------------------------------------------------------------------------------
+// Types
+type JobQueue = VecDeque<RayJob>;
+type Transmitter = std::sync::mpsc::Sender<RayJobResult>;
+type ImageBuffer = std::vec::Vec<[u8; 4]>;
 
 // -----------------------------------------------------------------------------------------
 // Config
@@ -204,8 +211,6 @@ fn run_thread(
 }
 
 // -----------------------------------------------------------------------------------------
-type JobQueue = VecDeque<RayJob>;
-type Transmitter = std::sync::mpsc::Sender<RayJobResult>;
 
 fn schedule_work(
     image_width: u32,
@@ -274,11 +279,12 @@ fn run_interactive() {
     let samples_per_pixel = quality.samples_per_pixel;
     let max_bounces = quality.max_bounces;
     let job = Job::new(quality, materials, debug_normals, debug_heatmap);
+    let mut can_take_screenshot = true;
 
     // Setup image buffer
     let total_pixel_count = image_height * image_width;
     let clear_colour = [0u8, 0u8, 0u8, 255u8];
-    let mut image_buffer = vec![clear_colour; total_pixel_count as usize];
+    let mut image_buffer: ImageBuffer = vec![clear_colour; total_pixel_count as usize];
 
     // Create window
     let mut window_handle = mini_gl_fb::gotta_go_fast(
@@ -353,6 +359,18 @@ fn run_interactive() {
         // Quit
         if input.key_is_down(VirtualKeyCode::Escape) {
             return false;
+        }
+
+        // Output screenshot?
+        if can_take_screenshot && input.key_is_down(VirtualKeyCode::O) {
+            let guid = GUID::rand().to_string();
+            let filename = format!("gallery/screenshot_{}.bmp", guid);
+            save_image(&image_buffer, image_width, image_height, &filename);
+            can_take_screenshot = false;
+        }
+        else if !can_take_screenshot
+        {
+            can_take_screenshot = true;
         }
 
          // Apply camera movement
@@ -502,6 +520,29 @@ fn run_interactive() {
         }
         true
     });
+}
+
+// -----------------------------------------------------------------------------------------
+
+pub fn save_image(image_buffer: &ImageBuffer, width: u32, height: u32, filename: &String) {
+    // Create bitmap
+    let mut output_bmp = bmp::Image::new(width, height);
+
+    // Copy image buffer to bitmap
+    for x in 0..width {
+        for y in 0..height {
+            let pixel_index = ((width * y) + x) as usize;
+            let pixel = bmp::Pixel {
+                r: image_buffer[pixel_index][0],
+                g: image_buffer[pixel_index][1],
+                b: image_buffer[pixel_index][2],
+            };
+            output_bmp.set_pixel(x, height - y - 1, pixel);
+        }
+    }
+
+    // Save bitmap
+    output_bmp.save(filename).expect("Failed to save image");
 }
 
 // -----------------------------------------------------------------------------------------
