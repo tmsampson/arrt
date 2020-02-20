@@ -102,46 +102,7 @@ const SCENE_SPHERES: [Sphere; 3] = [
 // -----------------------------------------------------------------------------------------
 
 fn main() {
-    // // Parse command line args
-    // let args = command_line::parse();
-
-    // // Load quality presets
-    // let quality_presets = QualityPresetBank::load_from_file(QUALITY_PRESETS_FILE);
-    // let quality_preset_name = args.value_of("quality").unwrap_or("default");
-    // let quality = quality_presets.get(quality_preset_name);
-
-    // // Load materials
-    // let materials = MaterialBank::load_from_file(MATERIALS_FILE);
-
-    // // Setup rng seed
-    // let rng_seed: u64 = args.occurrences_of("seed");
-
-    // // Setup camera
-    // let camera = Camera::new(CAMERA_POSITION, CAMERA_LOOKAT, CAMERA_FOV);
-
-    // // Setup job
-    // let debug_normals = args.is_present("debug-normals");
-    // let debug_heatmap = args.is_present("debug-heatmap");
-    // let mut job = Job::new(
-    //     quality,
-    //     materials,
-    //     rng_seed,
-    //     camera,
-    //     debug_normals,
-    //     debug_heatmap,
-    // );
-
-    // Run
     run_interactive();
-    // let mode = args.value_of("mode").unwrap_or("interactive");
-    // match mode {
-    //     "interactive" => run_interactive(),
-    //     "headless" => {
-    //         let output_filename = args.value_of("output-file").unwrap_or("output.bmp");
-    //         run_headless(&mut job, output_filename);
-    //     }
-    //     _ => println!("Invalid mode"),
-    // }
 }
 
 // -----------------------------------------------------------------------------------------
@@ -545,101 +506,6 @@ fn run_interactive() {
 
 // -----------------------------------------------------------------------------------------
 
-fn _run_headless(_job: &mut Job, _output_filename: &str) {
-    // Start timer
-    // let timer_begin = time::precise_time_s();
-
-    // // Draw scene
-    // draw_scene(job, true);
-
-    // // Save image
-    // job.save_image(output_filename);
-
-    // // Stop timer and report
-    // let timer_end = time::precise_time_s();
-    // println!("");
-    // println!("====================================================");
-    // println!(" SUMMARY");
-    // println!("====================================================");
-    // println!("     Output: {}", output_filename);
-    // //println!("       Seed: {}", rng_seed);
-    // println!("    Quality: {}", job.quality.name);
-    // println!(" Total time: {:.2} seconds", (timer_end - timer_begin));
-    // println!("====================================================");
-}
-
-// -----------------------------------------------------------------------------------------
-
-fn _draw_scene(job: &mut Job, output_progress_updates: bool) {
-    // Setup state
-    let image_width = job.quality.image_width;
-    let image_height = job.quality.image_height;
-
-    // Setup timer?
-    // let mut last_progress_update = if output_progress_updates {
-    //     time::precise_time_s()
-    // } else {
-    //     0.0
-    // };
-
-    // For each scanline...
-    let mut pixel = [0u8, 0u8, 0u8, 255u8];
-    for pixel_y in 0..image_height {
-        // Show progress?
-        // if output_progress_updates {
-        //     let now = time::precise_time_s();
-        //     let elapsed = now - last_progress_update;
-        //     if elapsed >= PROGRESS_UPDATE_INTERVAL {
-        //         let row = pixel_y + 1;
-        //         let percent = ((row as f32) / (image_height as f32)) * 100.0;
-        //         println!(
-        //             "Tracing: {:.2}% complete scanline {} / {}",
-        //             percent, row, image_height
-        //         );
-        //         last_progress_update = now;
-        //     }
-        // }
-
-        // For each column
-        for pixel_x in 0..image_width {
-            let pixel_index = Camera::get_pixel_index(
-                pixel_x,
-                pixel_y,
-                image_width,
-                job.quality.samples_per_pixel,
-            );
-
-            let mut colour = Vec3::BLACK;
-            let mut bounces_per_pixel = 0;
-            for sample_index in 0..job.quality.samples_per_pixel {
-                let mut bounces = 0;
-                //let ray = camera.cached_rays[pixel_index + sample_index];
-                //colour += sample_scene(&ray, job, &mut bounces);
-                bounces_per_pixel += bounces;
-            }
-
-            // Average colour
-            colour /= job.quality.samples_per_pixel as f32;
-
-            // Draw heatmap?
-            if job.debug_heatmap {
-                let heat = (bounces_per_pixel as f32 / job.quality.samples_per_pixel as f32)
-                    / job.quality.max_bounces as f32;
-                colour = Vec3::lerp(Vec3::GREEN, Vec3::RED, heat);
-            }
-
-            // Store pixel
-            Vec3::copy_to_pixel(colour, &mut pixel);
-
-            // Write pixel
-            let pixel_index = (pixel_y * image_width) + pixel_x;
-            //job.image_buffer[pixel_index as usize] = pixel;
-        }
-    }
-}
-
-// -----------------------------------------------------------------------------------------
-
 fn sample_scene(ray: &Ray, job: &Job) -> (Vec3, RayHitResult) {
     let mut result = RayHitResult::MAX_HIT;
 
@@ -662,7 +528,7 @@ fn sample_scene(ray: &Ray, job: &Job) -> (Vec3, RayHitResult) {
     // }
 
     // Use background?
-    let mut colour: Vec3;
+    let colour: Vec3;
     if job.debug_normals {
         colour = Vec3::new(
             (result.normal.x + 1.0) * 0.5,

@@ -41,13 +41,6 @@ pub fn parse<'a>() -> clap::ArgMatches<'a> {
                 .takes_value(false)
                 .help("Debug render heatmp"),
         )
-        .arg(
-            Arg::with_name("mode")
-                .long("mode")
-                .takes_value(true)
-                .default_value("interactive")
-                .help("Mode of operation"),
-        )
         .get_matches()
 }
 
