@@ -140,7 +140,7 @@ pub struct RayJobResult {
 // -----------------------------------------------------------------------------------------
 
 fn run_thread(
-    thread_index: usize,
+    _thread_index: usize,
     rng_seed: u64,
     job_queue_arc: &SafeQueue,
     job_arc: &Job,
@@ -468,22 +468,18 @@ fn run_interactive() {
         for pixel_y in 0..image_height {
             for pixel_x in 0..image_width {
                 let mut average = Vec3::BLACK;
-                let pixel_index =
+                let pixel_bucket_index =
                     (((pixel_y * image_width) + pixel_x) as usize) * samples_per_pixel;
                 for sample_index in 0..samples_per_pixel {
-                    let ray_index = pixel_index + sample_index;
+                    let ray_index = pixel_bucket_index + sample_index;
                     average += result_store[ray_index];
                 }
                 average /= samples_per_pixel as f32;
-                // println!(
-                //     "[MAIN] write: colour = {}, {}, {}",
-                //     average.x, average.y, average.z
-                // );
-                let pixel_index_2 = (((pixel_y * image_width) + pixel_x) as usize);
                 Vec3::copy_to_pixel(average, &mut pixel);
 
                 // Write pixel
-                image_buffer[pixel_index_2 as usize] = pixel;
+                let pixel_index = ((pixel_y * image_width) + pixel_x) as usize;
+                image_buffer[pixel_index as usize] = pixel;
             }
         }
         // draw_scene(job, false);
