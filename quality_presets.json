@@ -14,8 +14,8 @@
 	"low": {
 		"image_width": 640,
 		"image_height": 480,
-		"samples_per_pixel": 1,
-		"max_bounces": 1
+		"samples_per_pixel": 8,
+		"max_bounces": 8
 	},
 	"medium": {
 		"image_width": 1280,
